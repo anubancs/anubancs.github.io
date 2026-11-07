@@ -78,6 +78,10 @@
         }else if(platform==='google-drive'){
           const id=(u.pathname.match(/\/file\/d\/([\w-]+)/)||[])[1]||u.searchParams.get('id');
           if(!id||!/^[\w-]{10,}$/.test(id))return null;src='https://drive.google.com/file/d/'+id+'/preview';
+        }else if(platform==='facebook'){
+          const allowedHosts=['facebook.com','www.facebook.com','m.facebook.com','web.facebook.com'];
+          if(!allowedHosts.includes(u.hostname.toLowerCase())||!/^\/reel\/[\w.-]+\/?$/.test(u.pathname))return null;
+          src='https://www.facebook.com/plugins/video.php?href='+encodeURIComponent(u.href)+'&show_text=false&width=500';
         }else return null;
         return src;
       }catch(_){return null}
