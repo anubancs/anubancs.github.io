@@ -3,7 +3,7 @@
   const status=document.querySelector('#map-status'),frame=document.querySelector('#school-map');
   const {data:contactSetting}=await schoolSupabase.from('settings').select('value').eq('key','contact_details').eq('is_public',true).maybeSingle();
   const detail=contactSetting?.value||{},target=document.querySelector('#contact-details');
-  target.innerHTML=[['address','ที่อยู่'],['phone','โทรศัพท์'],['email','อีเมล'],['office_hours','เวลาทำการ']].filter(([k])=>detail[k]).map(([k,l])=>'<p><b>'+l+':</b> '+schoolUI.escapeHTML(detail[k])+'</p>').join('')+[['facebook_url','Facebook Page'],['line_url','LINE Official']].filter(([k])=>detail[k]&&/^https:\/\//.test(detail[k])).map(([k,l])=>'<p><a class="text-wine underline" target="_blank" rel="noopener" href="'+schoolUI.escapeHTML(detail[k])+'">'+l+' →</a></p>').join('');
+  target.innerHTML=[['address','ที่อยู่'],['phone','โทรศัพท์'],['email','อีเมล'],['office_hours','เวลาทำการ']].filter(([k])=>detail[k]).map(([k,l])=>'<p class="whitespace-pre-wrap break-words"><b>'+l+':</b> '+schoolUI.escapeHTML(detail[k])+'</p>').join('')+[['facebook_url','Facebook Page'],['line_url','LINE Official']].filter(([k])=>detail[k]&&/^https:\/\//.test(detail[k])).map(([k,l])=>'<p><a class="text-wine underline" target="_blank" rel="noopener" href="'+schoolUI.escapeHTML(detail[k])+'">'+l+' →</a></p>').join('');
 
   const valid=value=>{
     try{const u=new URL(String(value||''));const host=u.hostname.toLowerCase();return u.protocol==='https:'&&((host==='www.google.com'&&u.pathname==='/maps/embed')||(host==='maps.google.com'&&u.pathname==='/maps'&&u.searchParams.get('output')==='embed'))}catch{return false}
