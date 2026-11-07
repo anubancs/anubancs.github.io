@@ -49,7 +49,7 @@
     for(const [field,id] of [['students','stat-students'],['teachers','stat-teachers'],['classrooms','stat-classrooms'],['academic_year','stat-year']]){const el=document.getElementById(id);if(el)el.textContent=stats[field]!==undefined&&stats[field]!==''?Number.isFinite(Number(stats[field]))?Number(stats[field]).toLocaleString('th-TH'):String(stats[field]):'—'}
     if(stats.academic_year)document.getElementById('stats-year').textContent='ข้อมูลปีการศึกษา '+stats.academic_year+(stats.updated_label?' · '+stats.updated_label:'');
     const links=Array.isArray(values.school_quick_links)?values.school_quick_links:[];
-    document.getElementById('quick-links').innerHTML=links.filter(x=>x.url&&String(x.url).startsWith('https://')).map(x=>'<a class="glass card-hover rounded-xl p-5" target="_blank" rel="noopener" href="'+schoolUI.escapeHTML(x.url)+'"><b>'+schoolUI.escapeHTML(x.label||'เปิดบริการ')+'</b><p class="text-sm opacity-70 mt-1">'+schoolUI.escapeHTML(x.description||'เปิดบริการออนไลน์')+'</p></a>').join('')||'<p class="opacity-60">โรงเรียนอยู่ระหว่างจัดเตรียมลิงก์บริการออนไลน์</p>';
+    document.getElementById('quick-links').innerHTML=links.filter(x=>x.url&&String(x.url).startsWith('https://')).map(x=>'<a class="glass card-hover rounded-xl p-5" target="_blank" rel="noopener" href="'+schoolUI.escapeHTML(x.url)+'"><b>'+schoolUI.escapeHTML(x.label||'เปิดบริการ')+'</b><p class="text-sm opacity-70 mt-1 whitespace-pre-wrap break-words">'+schoolUI.escapeHTML(x.description||'เปิดบริการออนไลน์')+'</p></a>').join('')||'<p class="opacity-60">โรงเรียนอยู่ระหว่างจัดเตรียมลิงก์บริการออนไลน์</p>';
   };
   await loadSiteSettings();
   (async()=>{
@@ -85,7 +85,7 @@
     track.innerHTML=posts.map((p,i)=>{
       const src=embed(p),title=schoolUI.escapeHTML(p.title),desc=schoolUI.escapeHTML(p.description||''),url=schoolUI.escapeHTML(p.url);
       const player=src?'<iframe class="video-frame" src="'+src+'" title="'+title+'" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>':'<a class="video-unavailable" href="'+url+'" target="_blank" rel="noopener noreferrer">เปิดชมคลิปต้นฉบับ ↗</a>';
-      return '<article class="video-card glass" data-video-index="'+i+'"><div class="video-media">'+player+'</div><div class="p-4"><span class="video-platform">'+({youtube:'YouTube',tiktok:'TikTok','google-drive':'Google Drive'}[p.platform]||'Video')+'</span><h3 class="font-semibold text-lg mt-2">'+title+'</h3>'+(desc?'<p class="text-sm opacity-70 mt-2">'+desc+'</p>':'')+'<a class="inline-block text-wine text-sm font-semibold mt-3" href="'+url+'" target="_blank" rel="noopener noreferrer">เปิดคลิปต้นฉบับ ↗</a></div></article>';
+      return '<article class="video-card glass" data-video-index="'+i+'"><div class="video-media">'+player+'</div><div class="p-4"><span class="video-platform">'+({youtube:'YouTube',tiktok:'TikTok','google-drive':'Google Drive'}[p.platform]||'Video')+'</span><h3 class="font-semibold text-lg mt-2">'+title+'</h3>'+(desc?'<p class="text-sm opacity-70 mt-2 whitespace-pre-wrap break-words">'+desc+'</p>':'')+'<a class="inline-block text-wine text-sm font-semibold mt-3" href="'+url+'" target="_blank" rel="noopener noreferrer">เปิดคลิปต้นฉบับ ↗</a></div></article>';
     }).join('');
     const move=dir=>{const card=track.querySelector('.video-card');if(card)track.scrollBy({left:dir*(card.getBoundingClientRect().width+18),behavior:'smooth'})};
     document.getElementById('video-prev').onclick=()=>move(-1);document.getElementById('video-next').onclick=()=>move(1);
@@ -96,7 +96,7 @@
     const target=document.querySelector('#events-list');
     const {data,error}=await schoolSupabase.from('events').select('title,description,location,starts_at,ends_at').eq('is_published',true).gte('starts_at',new Date().toISOString()).order('starts_at').limit(4);
     if(error){target.textContent='ไม่สามารถโหลดปฏิทินกิจกรรมได้';return}
-    target.innerHTML=(data||[]).map(ev=>`<article class="glass card-hover rounded-2xl p-5"><p class="text-xs text-wine">${new Date(ev.starts_at).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})}</p><h3 class="font-semibold text-lg mt-2">${schoolUI.escapeHTML(ev.title)}</h3><p class="text-sm opacity-70 mt-2">${schoolUI.escapeHTML(ev.description||'')}</p><p class="text-xs opacity-60 mt-3">${schoolUI.escapeHTML(ev.location||'')}</p></article>`).join('')||'<p class="opacity-60">ยังไม่มีกิจกรรมที่กำหนดไว้</p>';
+    target.innerHTML=(data||[]).map(ev=>`<article class="glass card-hover rounded-2xl p-5"><p class="text-xs text-wine">${new Date(ev.starts_at).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'})}</p><h3 class="font-semibold text-lg mt-2">${schoolUI.escapeHTML(ev.title)}</h3><p class="text-sm opacity-70 mt-2 whitespace-pre-wrap break-words">${schoolUI.escapeHTML(ev.description||'')}</p><p class="text-xs opacity-60 mt-3">${schoolUI.escapeHTML(ev.location||'')}</p></article>`).join('')||'<p class="opacity-60">ยังไม่มีกิจกรรมที่กำหนดไว้</p>';
   }
   await renderEvents();
   schoolSupabase.channel('school-public-events').on('postgres_changes',{event:'*',schema:'public',table:'events'},renderEvents).subscribe();
