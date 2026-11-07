@@ -3,7 +3,7 @@
 const sections=[
 {key:'school_profile',title:'เกี่ยวกับโรงเรียน',help:'ประวัติ วิสัยทัศน์ พันธกิจ ค่านิยม ผู้บริหาร และโครงสร้าง 4 ฝ่าย',fields:[['history','ประวัติโรงเรียน'],['vision','วิสัยทัศน์'],['mission','พันธกิจ'],['values','ค่านิยม'],['director_name','ชื่อผู้อำนวยการ'],['director_message','สารจากผู้อำนวยการ'],['director_photo_url','URL รูปผู้อำนวยการ'],['organization','โครงสร้างองค์กร/4 ฝ่าย (อธิบายเป็นข้อความ)']]},
 {key:'school_statistics',title:'สถิติโรงเรียน',help:'ใส่เฉพาะตัวเลขที่ตรวจสอบแล้ว และระบุปีการศึกษากำกับ',fields:[['academic_year','ปีการศึกษา'],['students','จำนวนนักเรียน'],['teachers','จำนวนครูและบุคลากร'],['classrooms','จำนวนห้องเรียน'],['updated_label','หมายเหตุ/วันที่ปรับปรุง']]},
-{key:'home_video_posts',title:'คลิปวิดีโอหน้าแรก (Carousel Post)',json:true,default:[],help:'เพิ่ม 1 คลิปต่อ 1 บรรทัด รูปแบบ: แพลตฟอร์ม | ชื่อคลิป | คำอธิบาย | URL โดยแพลตฟอร์มใช้ youtube, tiktok หรือ google-drive และ URL ต้องเป็นลิงก์สาธารณะ',list:true,columns:['platform','title','description','url']},
+{key:'home_video_posts',title:'คลิปวิดีโอหน้าแรก (Carousel Post)',json:true,default:[],help:'เพิ่ม 1 คลิปต่อ 1 บรรทัด รูปแบบ: แพลตฟอร์ม | ชื่อคลิป | คำอธิบาย | URL โดยแพลตฟอร์มใช้ youtube, tiktok, google-drive หรือ facebook (ใช้ URL ของ Reel เช่น https://www.facebook.com/reel/123456789012345/) และ URL ต้องเป็นลิงก์สาธารณะ',list:true,columns:['platform','title','description','url']},
 {key:'school_quick_links',title:'ลิงก์ทางลัดหน้าแรก',help:'กรอก 1 รายการต่อ 1 บรรทัด รูปแบบ: ชื่อ | คำอธิบาย | URL',list:true,columns:['label','description','url']},
 {key:'academic_programs',title:'หลักสูตรและการศึกษา',help:'กรอก 1 รายการต่อ 1 บรรทัด รูปแบบ: ชื่อหลักสูตร/กลุ่มสาระ | รายละเอียด | URL เอกสาร (ถ้ามี)',list:true,columns:['title','description','url']},
 {key:'student_services',title:'ข้อมูลนักเรียนและผู้ปกครอง',help:'กรอก 1 รายการต่อ 1 บรรทัด รูปแบบ: ชื่อบริการ | รายละเอียด | URL (ลิงก์รับสมัครต้องผ่านการตรวจ PDPA แล้ว)',list:true,columns:['title','description','url']},
@@ -48,7 +48,7 @@ window.saveSchoolSection=async function(key,b){
     return Object.fromEntries(s.columns.map((key,i)=>[key,parts[i]||'']));
    });
    if(value.some(row=>row.url&&!String(row.url).startsWith('https://')))throw new Error('URL ของลิงก์ต้องขึ้นต้นด้วย https://');
-   if(s.key==='home_video_posts'&&value.some(row=>!['youtube','tiktok','google-drive'].includes(String(row.platform).toLowerCase())||!row.title||!row.url))throw new Error('กรุณาระบุแพลตฟอร์ม (youtube/tiktok/google-drive), ชื่อคลิป และ URL ให้ครบ');
+   if(s.key==='home_video_posts'&&value.some(row=>!['youtube','tiktok','google-drive','facebook'].includes(String(row.platform).toLowerCase())||!row.title||!row.url))throw new Error('กรุณาระบุแพลตฟอร์ม (youtube/tiktok/google-drive/facebook), ชื่อคลิป และ URL ให้ครบ');
   }else{
    value={};
    b.parentElement.querySelectorAll('[data-field]').forEach(el=>value[el.dataset.field]=el.value.trim());
