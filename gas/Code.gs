@@ -20,7 +20,7 @@ function doGet(e) {
   const folder = DriveApp.getFolderById(folderId), files = [], it = folder.getFiles();
   while (it.hasNext()) {
     const f = it.next(), mime = f.getMimeType();
-    if (!f.isTrashed() && /^image\\/(jpeg|png|webp|gif)$/i.test(mime)) {
+    if (!f.isTrashed() && /^image\/(jpeg|png|webp|gif)$/i.test(mime)) {
       files.push({id:f.getId(),name:f.getName(),mimeType:mime,
         url:imageUrl_(f.getId()),updatedAt:f.getLastUpdated().toISOString()});
     }
@@ -28,7 +28,7 @@ function doGet(e) {
   files.sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
   const payload = {ok:true,files:files.slice(0,300)};
   if (e.parameter.callback === 'schoolDriveFilesCallback') {
-    const body = JSON.stringify(payload).replace(/</g,'\\\\u003c');
+    const body = JSON.stringify(payload).replace(/</g,'\\u003c');
     return ContentService.createTextOutput('window.schoolDriveFilesCallback && window.schoolDriveFilesCallback('+body+');')
       .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
