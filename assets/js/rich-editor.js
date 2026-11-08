@@ -2,7 +2,11 @@
 (() => {
   const allowedTags = ['p','br','strong','b','em','i','u','s','sub','sup','h1','h2','h3','ol','ul','li','blockquote','a'];
   const allowedAttrs = ['href','target','rel','class'];
-  const classPattern = /^(ql-align-(center|right|justify)|ql-indent-[1-8]|ql-first-line-indent-1)$/;\n  // A block-level Quill format that persists as a safe class in saved HTML.\n  const Parchment = Quill.import('parchment');\n  const firstLineIndent = new Parchment.Attributor.Class('firstLineIndent', 'ql-first-line-indent', { scope: Parchment.Scope.BLOCK });\n  Quill.register(firstLineIndent, true);
+  const classPattern = /^(ql-align-(center|right|justify)|ql-indent-[1-8]|ql-first-line-indent-1)$/;
+  // A block-level Quill format that persists as a safe class in saved HTML.
+  const Parchment = Quill.import('parchment');
+  const firstLineIndent = new Parchment.Attributor.Class('firstLineIndent', 'ql-first-line-indent', { scope: Parchment.Scope.BLOCK });
+  Quill.register(firstLineIndent, true);
   const sanitize = html => {
     const clean = window.DOMPurify ? DOMPurify.sanitize(String(html || ''), {
       ALLOWED_TAGS: allowedTags, ALLOWED_ATTR: allowedAttrs, ALLOW_DATA_ATTR: false,
@@ -25,7 +29,8 @@
     return box.innerHTML;
   };
   const isHtml = value => /<\/?(p|br|strong|b|em|i|u|s|h[1-3]|ol|ul|li|blockquote|a)(\s|>|\/)/i.test(String(value || ''));
-  const legacy = value => String(value || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean).map(x => '<p>'+escape(x)+'</p>').join('');
+  const legacy = value => String(value || '').split(/\r?
+/).map(x => x.trim()).filter(Boolean).map(x => '<p>'+escape(x)+'</p>').join('');
   const escape = value => String(value).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const normalize = value => isHtml(value) ? sanitize(value) : legacy(value);
   const editors = new WeakMap();
@@ -35,7 +40,9 @@
     const editorNode = document.createElement('div'); editorNode.className='school-rich-editor__surface';
     textarea.parentNode.insertBefore(host, textarea); host.appendChild(editorNode);
     textarea.classList.add('school-rich-editor__source'); textarea.setAttribute('aria-hidden','true');
-    const quill = new Quill(editorNode, {theme:'snow', placeholder:options.placeholder || textarea.placeholder || 'พิมพ์ข้อความที่นี่...', modules:{toolbar:{container:[['bold','italic','underline','strike'],[{header:[1,2,3,false]}],[{list:'ordered'},{list:'bullet'}],[{align:[]}],[{indent:'-1'},{indent:'+1'}],['firstLineIndent'],['blockquote'],['link'],['clean']],handlers:{firstLineIndent:function(){const range=this.quill.getSelection(true);if(!range)return;const active=this.quill.getFormat(range).firstLineIndent;this.quill.formatLine(range.index,Math.max(range.length,1),'firstLineIndent',active?'': '1','user');}}}}});\n    const indentButton=host.querySelector('.ql-firstLineIndent');\n    if(indentButton){indentButton.type='button';indentButton.title='เยื้องบรรทัดแรก';indentButton.setAttribute('aria-label','เยื้องบรรทัดแรก');indentButton.textContent='⇥';}
+    const quill = new Quill(editorNode, {theme:'snow', placeholder:options.placeholder || textarea.placeholder || 'พิมพ์ข้อความที่นี่...', modules:{toolbar:{container:[['bold','italic','underline','strike'],[{header:[1,2,3,false]}],[{list:'ordered'},{list:'bullet'}],[{align:[]}],[{indent:'-1'},{indent:'+1'}],['firstLineIndent'],['blockquote'],['link'],['clean']],handlers:{firstLineIndent:function(){const range=this.quill.getSelection(true);if(!range)return;const active=this.quill.getFormat(range).firstLineIndent;this.quill.formatLine(range.index,Math.max(range.length,1),'firstLineIndent',active?'': '1','user');}}}}});
+    const indentButton=host.querySelector('.ql-firstLineIndent');
+    if(indentButton){indentButton.type='button';indentButton.title='เยื้องบรรทัดแรก';indentButton.setAttribute('aria-label','เยื้องบรรทัดแรก');indentButton.textContent='⇥';}
     const initial=textarea.value; quill.root.innerHTML=normalize(initial);
     const sync=()=>{textarea.value=sanitize(quill.root.innerHTML);textarea.dispatchEvent(new Event('input',{bubbles:true}));};
     quill.on('text-change',sync);
