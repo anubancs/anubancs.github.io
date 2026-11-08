@@ -6,27 +6,40 @@
 const DEFAULT_DRIVE_FOLDER_ID = '1ptff4TPbIh9hlCwss4Fxg-lVpZfI33j8';
 const SUPABASE_URL = 'https://uwebbofczidcfnjbvsqu.supabase.co';
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
-const SCHOOL_SITE_ORIGIN = 'https://anubancs.github.io';
+const SCHOOL_SITE_ORIGIN = 'https://www.anuban-cs.ac.th';
+const SCHOOL_SITE_ORIGINS = ['https://www.anuban-cs.ac.th','https://anuban-cs.ac.th','https://anubancs.github.io'];
+const PERSONNEL_IMAGE_LIBRARY_FOLDER_ID = '1UtRxHeJcPzXwy3--ta3MHHy8ElIOSfrZ';
 const IMAGE_TYPES = ['image/jpeg','image/png','image/webp','image/gif'];
 
 function doGet(e) {
   const action = e && e.parameter && e.parameter.action || 'health';
   if (action === 'health') return json_({ok:true,service:'school-drive-media'});
   if (action !== 'files') return json_({ok:false,error:'Unsupported action'});
-  const folder = DriveApp.getFolderById(driveFolderId_()), files = [], it = folder.getFiles();
+  const library = String(e.parameter.library || '');
+  const folderId = library === 'personnel' ? PERSONNEL_IMAGE_LIBRARY_FOLDER_ID : driveFolderId_();
+  const folder = DriveApp.getFolderById(folderId), files = [], it = folder.getFiles();
   while (it.hasNext()) {
-    const f = it.next();
-    if (!f.isTrashed()) files.push({id:f.getId(),name:f.getName(),mimeType:f.getMimeType(),
-      url:imageUrl_(f.getId()),updatedAt:f.getLastUpdated().toISOString()});
+    const f = it.next(), mime = f.getMimeType();
+    if (!f.isTrashed() && /^image\\/(jpeg|png|webp|gif)$/i.test(mime)) {
+      files.push({id:f.getId(),name:f.getName(),mimeType:mime,
+        url:imageUrl_(f.getId()),updatedAt:f.getLastUpdated().toISOString()});
+    }
   }
-  return json_({ok:true,files:files});
+  files.sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+  const payload = {ok:true,files:files.slice(0,300)};
+  if (e.parameter.callback === 'schoolDriveFilesCallback') {
+    const body = JSON.stringify(payload).replace(/</g,'\\\\u003c');
+    return ContentService.createTextOutput('window.schoolDriveFilesCallback && window.schoolDriveFilesCallback('+body+');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return json_(payload);
 }
 function doPost(e) {
   const p = e && e.parameter || {};
   try {
     if (p.action === 'upload') {
       const requestId = String(p.request_id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
-      try { return uploadResponse_(requestId, uploadImage_(p)); }
+      try { return uploadResponse_(requestId, uploadImage_(p), p.origin); }
       catch (uploadError) { return uploadResponse_(requestId, {ok:false,error:String(uploadError && uploadError.message || uploadError)}); }
     }
     if (p.action === 'notify') return notify_(p);
@@ -117,10 +130,11 @@ function sendTelegram_(message) {
 function safe_(v,n) { return String(v||'').replace(/[<>]/g,'').trim().slice(0,n); }
 function json_(v) { return ContentService.createTextOutput(JSON.stringify(v)).setMimeType(ContentService.MimeType.JSON); }
 
-function uploadResponse_(requestId, result) {
+function uploadResponse_(requestId, result, origin) {
+  const targetOrigin = SCHOOL_SITE_ORIGINS.indexOf(String(origin || '')) >= 0 ? String(origin) : SCHOOL_SITE_ORIGIN;
   const payload = JSON.stringify({type:'school-drive-upload',requestId:requestId,result:result}).replace(/</g,'\\u003c');
   const html = '<!doctype html><html><body><script>window.parent.postMessage(' + payload + ',' +
-    JSON.stringify(SCHOOL_SITE_ORIGIN) + ');</script>อัปโหลดเสร็จแล้ว</body></html>';
+    JSON.stringify(targetOrigin) + ');</script>อัปโหลดเสร็จแล้ว</body></html>';
   return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
