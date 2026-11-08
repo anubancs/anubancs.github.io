@@ -18,37 +18,22 @@
 
 ผู้อำนวยการโรงเรียน
 
-โรงเรียนอนุบาลชุมแสง (วัดทับกฤชกลาง)</p><p id="director-status" class="text-sm text-rose-700 mt-2" role="status"></p></div></div></section><section class="glass rounded-2xl p-6 mt-5"><h2 class="text-2xl font-bold">โครงสร้างการบริหารงาน</h2><p id="organization" class="mt-3 whitespace-pre-line">โรงเรียนอยู่ระหว่างจัดเตรียมข้อมูลโครงสร้างองค์กรและการบริหารงาน 4 ฝ่าย</p></section><section class="mt-8"><h2 class="text-2xl font-bold">ทำเนียบบุคลากร</h2><a class="text-wine underline" href="personnel.html">ดูรายชื่อผู้บริหาร ครู และบุคลากร →</a></section></main><script src="assets/js/app.js"></script><script>
+โรงเรียนอนุบาลชุมแสง (วัดทับกฤชกลาง)</p><p id="director-status" class="text-sm text-rose-700 mt-2" role="status"></p></div></div></section><section class="glass rounded-2xl p-6 mt-5"><h2 class="text-2xl font-bold">โครงสร้างการบริหารงาน</h2><p id="organization" class="mt-3 whitespace-pre-line">โรงเรียนอยู่ระหว่างจัดเตรียมข้อมูลโครงสร้างองค์กรและการบริหารงาน 4 ฝ่าย</p></section><section class="mt-8"><h2 class="text-2xl font-bold">ทำเนียบบุคลากร</h2><a class="text-wine underline" href="personnel.html">ดูรายชื่อผู้บริหาร ครู และบุคลากร →</a></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="assets/js/supabase.js"></script><script src="assets/js/app.js"></script><script>
 (async()=>{
  const status=document.getElementById('director-status');
- const message=document.getElementById('director-message');
- const SUPABASE_URL='https://uwebbofczidcfnjbvsqu.supabase.co';
- const SUPABASE_PUBLISHABLE_KEY='sb_publishable_3xMsRwdyNUhPsnJiH34O9w_hnF8BUiV';
- const controller=new AbortController();
- const timeoutId=window.setTimeout(()=>controller.abort(),10000);
+ const setText=(id,value)=>{const el=document.getElementById(id);if(el&&typeof value==='string'&&value.trim()!=='')el.textContent=value;};
  try{
-  const endpoint=SUPABASE_URL+'/rest/v1/settings?select=value&key=eq.school_profile&is_public=eq.true&limit=1';
-  const response=await fetch(endpoint,{
-   method:'GET',
-   headers:{
-    apikey:SUPABASE_PUBLISHABLE_KEY,
-    Accept:'application/json'
-   },
-   cache:'no-store',
-   signal:controller.signal
-  });
-  if(!response.ok){
-   const detail=await response.text();
-   throw new Error('Supabase HTTP '+response.status+(detail?' — '+detail.slice(0,240):''));
-  }
-  const rows=await response.json();
-  const v=Array.isArray(rows)&&rows.length?rows[0].value:null;
-  if(!v||typeof v!=='object')throw new Error('ยังไม่พบข้อมูลโรงเรียนที่เปิดเผยสาธารณะ');
-  for(const k of ['history','vision','mission','values','director_name','director_message','organization']){
-   const el=document.getElementById(k);
-   if(el&&typeof v[k]==='string'&&v[k].trim())el.textContent=v[k];
-  }
-  if(message&&(!v.director_message||!String(v.director_message).trim()))message.textContent='โรงเรียนอยู่ระหว่างจัดเตรียมสารจากผู้อำนวยการ';
+  if(!window.schoolSupabase)throw new Error('Supabase client ยังไม่พร้อมใช้งาน');
+  const {data,error}=await window.schoolSupabase
+   .from('settings')
+   .select('value')
+   .eq('key','school_profile')
+   .eq('is_public',true)
+   .maybeSingle();
+  if(error)throw error;
+  if(!data||!data.value||typeof data.value!=='object')throw new Error('ไม่พบข้อมูล school_profile หรือข้อมูลไม่ได้เปิดเผยสาธารณะ');
+  const v=data.value;
+  for(const k of ['history','vision','mission','values','director_name','director_message','organization'])setText(k,v[k]);
   if(v.director_photo_url){
    const im=document.getElementById('director-photo');
    im.src=v.director_photo_url;
@@ -58,11 +43,6 @@
   if(status)status.textContent='';
  }catch(err){
   console.error('Load school profile failed:',err);
-  if(message)message.textContent='ไม่สามารถโหลดสารจากผู้อำนวยการได้ในขณะนี้';
-  const detail=err?.name==='AbortError'?'เชื่อมต่อฐานข้อมูลเกิน 10 วินาที กรุณาตรวจสอบอินเทอร์เน็ตแล้วโหลดใหม่':(err?.message||String(err));
-  if(status)status.textContent='โหลดข้อมูลไม่สำเร็จ: '+detail;
- }finally{
-  window.clearTimeout(timeoutId);
+  if(status)status.textContent='โหลดข้อมูลจากฐานข้อมูลไม่สำเร็จ: '+(err?.message||String(err));
  }
-})();
-</script></body></html>
+})();</script></body></html>
