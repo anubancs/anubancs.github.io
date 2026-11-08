@@ -3,7 +3,7 @@
 .school-rich-editor .ql-toolbar.ql-snow{border:0;border-bottom:1px solid #f0dce2;background:#fff7f9;display:flex;flex-wrap:wrap;gap:3px}
 .school-rich-editor .ql-container.ql-snow{border:0;font:inherit;font-size:16px}
 .school-rich-editor .ql-editor{min-height:190px;line-height:1.85;padding:14px 16px;overflow-wrap:anywhere}
-.school-rich-editor .ql-editor.ql-blank::before{font-style:normal;color:#9b8790}
+.school-rich-editor .ql-editor.ql-blank::before{font-style:normal;color:#9b8790}\n.school-rich-editor .ql-toolbar button.ql-firstLineIndent{width:30px;font-size:19px;font-weight:700;color:#6f263f}\n.school-rich-editor .ql-toolbar button.ql-firstLineIndent::after{content:'บรรทัดแรก';font-size:9px;display:block;line-height:9px;margin-top:-3px;white-space:nowrap}\n.school-rich-editor .ql-editor .ql-first-line-indent-1{ text-indent:2em }
 .school-rich-editor__source{display:none!important}
 .school-rich-editor:focus-within{border-color:#984761;box-shadow:0 0 0 3px #98476118}
 .rich-content{line-height:1.95;overflow-wrap:anywhere}
@@ -14,6 +14,6 @@
 .rich-content ul{list-style:disc}.rich-content ol{list-style:decimal}
 .rich-content blockquote{border-left:4px solid #984761;padding:.6em 1em;margin:1em 0;background:#fff7f9;color:#6f263f}
 .rich-content a{color:#984761;text-decoration:underline}
-.rich-content .ql-align-center{text-align:center}.rich-content .ql-align-right{text-align:right}.rich-content .ql-align-justify{text-align:justify}
+.rich-content .ql-first-line-indent-1{text-indent:2em}\n.rich-content .ql-align-center{text-align:center}.rich-content .ql-align-right{text-align:right}.rich-content .ql-align-justify{text-align:justify}
 .rich-content .ql-indent-1{padding-left:3em}.rich-content .ql-indent-2{padding-left:6em}.rich-content .ql-indent-3{padding-left:9em}.rich-content .ql-indent-4{padding-left:12em}
 @media(max-width:640px){.school-rich-editor .ql-toolbar.ql-snow{padding:6px}.school-rich-editor .ql-editor{min-height:160px;padding:12px}.rich-content .ql-indent-1,.rich-content .ql-indent-2,.rich-content .ql-indent-3,.rich-content .ql-indent-4{padding-left:1.25em}}
