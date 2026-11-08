@@ -49,25 +49,34 @@
       Object.entries(values).forEach(([name,value])=>{
         const field=document.createElement('input');field.type='hidden';field.name=name;field.value=value;form.appendChild(field);
       });
-      let settled=false;
-      const cleanup=()=>{window.removeEventListener('message',onMessage);form.remove();frame.remove();clearTimeout(timer)};
-      const finish=(fn,value)=>{if(settled)return;settled=true;cleanup();fn(value)};
-      const onMessage=event=>{
-        let trustedOrigin=false;
-        try {
-          const host=new URL(event.origin).hostname;
-          trustedOrigin=host==='script.google.com'||host==='googleusercontent.com'||host.endsWith('.googleusercontent.com');
-        } catch {}
-        if(!trustedOrigin)return;
-        const msg=event.data;
-        if(!msg||msg.type!=='school-drive-upload'||msg.requestId!==requestId)return;
-        if(msg.result?.ok&&msg.result.url)finish(resolve,msg.result);
-        else finish(reject,new Error(msg.result?.error||'Google Drive บันทึกภาพไม่สำเร็จ'));
+      let settled=false, pollTimer=null, timeoutTimer=null, pollScript=null;
+      const callbackName='schoolDriveUploadCallback_'+requestId.replace(/[^a-zA-Z0-9_]/g,'_');
+      const cleanup=()=>{
+        if(pollTimer)clearTimeout(pollTimer);
+        if(timeoutTimer)clearTimeout(timeoutTimer);
+        if(pollScript)pollScript.remove();
+        try{delete window[callbackName]}catch{window[callbackName]=undefined}
+        form.remove();frame.remove();
       };
-      const timer=setTimeout(()=>finish(reject,new Error('Google Drive ไม่ตอบกลับภายใน 60 วินาที กรุณาลองภาพขนาดเล็กลงหรือตรวจสอบการเผยแพร่ Apps Script')),60000);
-      window.addEventListener('message',onMessage);
+      const finish=(fn,value)=>{if(settled)return;settled=true;cleanup();fn(value)};
+      const poll=()=>{
+        if(settled)return;
+        if(pollScript)pollScript.remove();
+        pollScript=document.createElement('script');
+        pollScript.src=endpoint+'?action=upload_status&request_id='+encodeURIComponent(requestId)+'&callback='+encodeURIComponent(callbackName)+'&_='+Date.now();
+        pollScript.onerror=()=>{if(!settled)pollTimer=setTimeout(poll,2000)};
+        document.head.appendChild(pollScript);
+        pollTimer=setTimeout(poll,1800);
+      };
+      window[callbackName]=result=>{
+        if(settled||!result||result.pending)return;
+        if(result.ok&&result.url)finish(resolve,result);
+        else finish(reject,new Error(result.error||'Google Drive บันทึกภาพไม่สำเร็จ'));
+      };
+      timeoutTimer=setTimeout(()=>finish(reject,new Error('ตรวจสอบผลการอัปโหลดไม่สำเร็จภายใน 60 วินาที กรุณารีเฟรชหน้าเว็บและตรวจสอบไฟล์ใน Google Drive ก่อนอัปโหลดซ้ำ')),60000);
       document.body.append(frame,form);
       form.submit();
+      pollTimer=setTimeout(poll,1200);
     });
   }
   window.schoolDrive={upload};
