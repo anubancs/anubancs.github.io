@@ -20,7 +20,7 @@ function doGet(e) {
   const folder = DriveApp.getFolderById(folderId), files = [], it = folder.getFiles();
   while (it.hasNext()) {
     const f = it.next(), mime = f.getMimeType();
-    if (!f.isTrashed() && /^image\/(jpeg|png|webp|gif)$/i.test(mime)) {
+    if (!f.isTrashed() && ['image/jpeg','image/png','image/webp','image/gif'].indexOf(mime.toLowerCase()) >= 0) {
       files.push({id:f.getId(),name:f.getName(),mimeType:mime,
         url:imageUrl_(f.getId()),updatedAt:f.getLastUpdated().toISOString()});
     }
