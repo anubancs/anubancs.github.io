@@ -9,7 +9,7 @@
 <label class="text-sm">ตำแหน่ง<input name="position" required maxlength="200" class="block w-full rounded-xl border p-3 text-black mt-1"></label>
 <label class="text-sm">กลุ่มงาน / กลุ่มสาระ<input name="department" maxlength="200" class="block w-full rounded-xl border p-3 text-black mt-1"></label>
 <label class="text-sm">เบอร์โทรศัพท์ที่ยินยอมให้เผยแพร่<input name="phone_public" maxlength="50" class="block w-full rounded-xl border p-3 text-black mt-1"></label>
-<label class="text-sm md:col-span-2">URL รูปภาพ (Google Drive หรือ HTTPS)<input name="photo_url" type="url" class="block w-full rounded-xl border p-3 text-black mt-1" placeholder="https://..."></label>
+<div class="text-sm md:col-span-2"><label>URL รูปภาพ (ระบบเติมให้อัตโนมัติ)</label><input name="photo_url" type="url" class="block w-full rounded-xl border p-3 text-black mt-1" placeholder="URL จะเติมให้อัตโนมัติเมื่อเลือกหรืออัปโหลดภาพ"><div class="flex flex-wrap gap-4 mt-3"><label>อัปโหลดภาพใหม่ (JPG/PNG/WEBP/GIF ไม่เกิน 20 MB)<input class="block mt-1" type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-drive-upload="personnel" data-drive-target="#profile-form [name=photo_url]" data-drive-preview="#profile-photo-preview" data-drive-status="#profile-photo-status"></label><button type="button" class="text-wine underline self-end" data-drive-library="personnel" data-drive-target="#profile-form [name=photo_url]" data-drive-preview="#profile-photo-preview" data-drive-status="#profile-photo-status">เลือกภาพเดิมจาก Google Drive</button></div><img id="profile-photo-preview" class="hidden mt-3 w-28 h-28 rounded-xl object-cover border" alt="ตัวอย่างรูปบุคลากร"><p id="profile-photo-status" class="text-xs opacity-70 mt-2" role="status"></p></div>
 <label class="text-sm md:col-span-2">เว็บไซต์ส่วนตัว<input name="personal_website_url" type="url" class="block w-full rounded-xl border p-3 text-black mt-1" placeholder="https://..."></label>
 <label class="text-sm">Facebook URL<input name="social_facebook" type="url" class="block w-full rounded-xl border p-3 text-black mt-1" placeholder="https://facebook.com/..."></label>
 <label class="text-sm">Instagram URL<input name="social_instagram" type="url" class="block w-full rounded-xl border p-3 text-black mt-1" placeholder="https://instagram.com/..."></label>
@@ -19,7 +19,7 @@
 </form><p id="profile-status" class="text-sm mt-4 opacity-70" role="status"></p></section>
 <section class="glass rounded-2xl p-6 mt-7"><h2 class="text-xl font-bold">สถานะคำขอแก้ไข</h2><div id="request-history" class="mt-3 text-sm opacity-75">กำลังโหลด...</div></section>
 </main>
-<script src="../assets/js/supabase.js"></script><script>
+<script src="../assets/js/supabase.js"></script><script src="../assets/js/drive-upload.js?v=20261108-personnel"></script><script src="../assets/js/drive-library.js?v=20261108-personnel"></script><script>
 (async()=>{
  const db=schoolSupabase,$=s=>document.querySelector(s),form=$('#profile-form');
  const {data:{user},error:authError}=await db.auth.getUser();if(authError||!user){location.replace('login.html');return}
@@ -28,6 +28,7 @@
  if(error)throw error;
  if(!person){document.querySelector('main').innerHTML='<section class="glass rounded-2xl p-8"><h1 class="text-2xl font-bold">ยังไม่ได้เชื่อมบัญชีกับข้อมูลบุคลากร</h1><p class="mt-3">กรุณาติดต่อผู้ดูแลเว็บไซต์เพื่อเชื่อมบัญชีผู้ใช้เดิมกับรายชื่อบุคลากรของท่าน</p><a class="inline-block mt-5 underline text-wine" href="../index.html">กลับหน้าเว็บไซต์</a></section>';return}
  for(const key of ['full_name','position','department','bio','photo_url','phone_public','personal_website_url'])form.elements[key].value=person[key]||'';
+ if(person.photo_url){$('#profile-photo-preview').src=person.photo_url;$('#profile-photo-preview').classList.remove('hidden')}
  for(const key of ['facebook','instagram','line'])form.elements['social_'+key].value=person.social_links?.[key]||'';
  SchoolRichEditor.init(form.elements.bio);
  async function history(){
