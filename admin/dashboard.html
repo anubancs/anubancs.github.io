@@ -2,7 +2,7 @@
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ระบบจัดการเว็บไซต์โรงเรียน</title>
 <script src="https://cdn.tailwindcss.com"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<link rel="stylesheet" href="../assets/css/style.css?v=20261107-pink"></head>
+<link rel="stylesheet" href="../assets/css/style.css?v=20261107-pink"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css"><link rel="stylesheet" href="../assets/css/rich-editor.css"><script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script><script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script><script src="../assets/js/rich-editor.js"></script></head>
 <body>
 <header class="brand-gradient text-white p-5"><div class="max-w-7xl mx-auto flex justify-between items-center"><b>School CMS · Dashboard</b><div class="flex gap-4"><a href="site-content.html">ข้อมูลโรงเรียน/หน้าเว็บ</a><a href="calendar.html">ปฏิทินกิจกรรม</a><a href="messages.html">กล่องข้อความ</a><a href="personnel.html">จัดการบุคลากร</a><a href="library.html">เอกสาร/กิจกรรม</a><a href="permissions.html">กำหนดสิทธิ์</a><a href="groups.html">ตั้งค่ากลุ่มงาน</a><a href="../index.html">ดูเว็บไซต์</a><button id="logout">ออกจากระบบ</button></div></div></header>
 <main class="max-w-7xl mx-auto p-5 md:p-10">
@@ -43,7 +43,7 @@
       <input class="rounded-xl p-3 text-black" name="slug" placeholder="slug ภาษาอังกฤษ" required pattern="[a-z0-9-]+" maxlength="250">
       <input class="rounded-xl p-3 text-black md:col-span-2" name="cover_image_url" type="url" placeholder="URL ภาพหน้าปก (ระบบเติมให้อัตโนมัติเมื่ออัปโหลด)"><label class="md:col-span-2 text-sm">หรือเลือกภาพหน้าปกจากเครื่อง (JPG/PNG/WEBP/GIF ไม่เกิน 20 MB)<input id="news-cover-file" class="block mt-2" type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-drive-upload="news" data-drive-target="#news-form [name=cover_image_url]" data-drive-status="#news-cover-status"></label><p id="news-cover-status" class="md:col-span-2 text-sm opacity-70" role="status"></p>
       <textarea id="news-excerpt" class="rounded-xl p-3 text-black md:col-span-2" name="excerpt" placeholder="คำโปรย" maxlength="500"></textarea><div class="md:col-span-2 flex flex-wrap items-center gap-3"><button id="ai-summary-button" type="button" class="border border-wine text-wine rounded-xl px-4 py-2">✦ ให้ AI ช่วยเขียนคำโปรย</button><span id="ai-summary-status" class="text-xs opacity-70" role="status"></span></div>
-      <textarea class="rounded-xl p-3 text-black md:col-span-2" name="content" rows="6" placeholder="เนื้อหาข่าว" required></textarea>
+      <textarea data-rich-text class="rounded-xl p-3 text-black md:col-span-2" name="content" rows="6" placeholder="เนื้อหาข่าว" required></textarea>
       <div class="flex flex-wrap gap-3 md:col-span-2"><button class="brand-gradient text-white rounded-xl px-5 py-3">บันทึกฉบับร่าง</button><button id="publish-news" type="button" class="btn-gold rounded-xl px-5 py-3">บันทึกและเผยแพร่</button></div>
     </form>
   </section>
@@ -59,7 +59,7 @@
       <input class="rounded-xl p-3 text-black" name="department" placeholder="กลุ่มสาระ/กลุ่มงาน">
       <div><input class="w-full rounded-xl p-3 text-black" name="photo_url" type="url" placeholder="URL รูปภาพ"><label class="block text-sm mt-2">อัปโหลดรูปบุคลากร<input id="staff-photo-file" class="block mt-1" type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-drive-upload="personnel" data-drive-target="#staff-form [name=photo_url]" data-drive-status="#staff-photo-status"></label><p id="staff-photo-status" class="text-xs mt-1 opacity-70" role="status"></p></div>
       <input class="rounded-xl p-3 text-black md:col-span-2" name="personal_website_url" type="url" placeholder="เว็บไซต์ส่วนตัว (https://...)">
-      <textarea class="rounded-xl p-3 text-black md:col-span-2" name="bio" rows="3" placeholder="ประวัติย่อ"></textarea>
+      <textarea data-rich-text class="rounded-xl p-3 text-black md:col-span-2" name="bio" rows="3" placeholder="ประวัติย่อ"></textarea>
       <button class="brand-gradient text-white rounded-xl p-3 md:col-span-2">เพิ่มบุคลากร (ยังไม่เผยแพร่)</button>
     </form>
   </section>
@@ -140,10 +140,10 @@
   }
   async function saveNews(publish){
     const f=Object.fromEntries(new FormData($('#news-form')).entries());
-    const payload={...f,status:publish?'published':'draft',published_at:publish?new Date().toISOString():null,created_by:user.id,author_name:user.email};
+    f.content=SchoolRichEditor.getHTML($('#news-form [name=content]'));const payload={...f,status:publish?'published':'draft',published_at:publish?new Date().toISOString():null,created_by:user.id,author_name:user.email};
     const {error}=await db.from('news').insert(payload);
     if(error){Swal.fire('บันทึกไม่สำเร็จ',error.message,'error');return}
-    $('#news-form').reset();await Promise.all([stats(),loadNews()]);Swal.fire('สำเร็จ',publish?'ข่าวเผยแพร่แล้ว':'บันทึกเป็นฉบับร่างแล้ว','success');
+    $('#news-form').reset();SchoolRichEditor.setHTML($('#news-form [name=content]'),'');await Promise.all([stats(),loadNews()]);Swal.fire('สำเร็จ',publish?'ข่าวเผยแพร่แล้ว':'บันทึกเป็นฉบับร่างแล้ว','success');
   }
   $('#news-form').addEventListener('submit',e=>{e.preventDefault();saveNews(false)});
   $('#publish-news').addEventListener('click',()=>{if($('#news-form').reportValidity())saveNews(true)});
