@@ -159,8 +159,8 @@
     if(edit){
       const id=edit.dataset.editNews;const {data,error}=await db.from('news').select('*').eq('id',id).single();if(error)return Swal.fire('ผิดพลาด',error.message,'error');
       const fields=[['title','หัวข้อ',data.title],['slug','Slug',data.slug],['excerpt','คำโปรย',data.excerpt||''],['cover_image_url','URL ภาพ',data.cover_image_url||''],['content','เนื้อหา',data.content]];
-      const html=fields.map(([n,l,v])=>`<label class="block text-left text-sm mt-2">${l}</label><textarea id="swal-${n}" class="swal2-textarea" style="width:100%;margin:4px 0">${esc(v)}</textarea>`).join('');
-      const result=await Swal.fire({title:'แก้ไขข่าว',html,showCancelButton:true,confirmButtonText:'บันทึก',preConfirm:()=>Object.fromEntries(fields.map(([n])=>[n,document.querySelector('#swal-'+n).value]))});
+      const html=fields.map(([n,l,v])=>`<label class="block text-left text-sm mt-2">${l}</label><textarea id="swal-${n}" ${n==="content"?"data-rich-text":""} class="swal2-textarea" style="width:100%;margin:4px 0">${esc(v)}</textarea>`).join('');
+      const result=await Swal.fire({title:'แก้ไขข่าว',html,showCancelButton:true,confirmButtonText:'บันทึก',didOpen:()=>SchoolRichEditor.init(document.querySelector('#swal-content')),preConfirm:()=>Object.fromEntries(fields.map(([n])=>[n,n==='content'?SchoolRichEditor.getHTML(document.querySelector('#swal-content')):document.querySelector('#swal-'+n).value]))});
       if(result.isConfirmed){const {error:uerr}=await db.from('news').update(result.value).eq('id',id);if(uerr)Swal.fire('ผิดพลาด',uerr.message,'error');else{await loadNews();Swal.fire('บันทึกแล้ว','','success')}}
     }
     if(toggle){const publish=toggle.dataset.status!=='published';const {error}=await db.from('news').update({status:publish?'published':'draft',published_at:publish?new Date().toISOString():null}).eq('id',toggle.dataset.toggleNews);if(error)Swal.fire('ผิดพลาด',error.message,'error');else{await loadNews();await stats()}}
@@ -171,8 +171,8 @@
     if(edit){
       const id=edit.dataset.editStaff;const {data,error}=await db.from('personnel').select('*').eq('id',id).single();if(error)return Swal.fire('ผิดพลาด',error.message,'error');
       const fields=[['full_name','ชื่อ-นามสกุล',data.full_name],['position','ตำแหน่ง',data.position],['department','กลุ่มงาน',data.department||''],['photo_url','URL รูป',data.photo_url||''],['personal_website_url','เว็บไซต์ส่วนตัว',data.personal_website_url||''],['bio','ประวัติ',data.bio||'']];
-      const html=fields.map(([n,l,v])=>`<label class="block text-left text-sm mt-2">${l}</label><textarea id="swal-${n}" class="swal2-textarea" style="width:100%;margin:4px 0">${esc(v)}</textarea>`).join('');
-      const result=await Swal.fire({title:'แก้ไขข้อมูลบุคลากร',html,showCancelButton:true,confirmButtonText:'บันทึก',preConfirm:()=>Object.fromEntries(fields.map(([n])=>[n,document.querySelector('#swal-'+n).value]))});
+      const html=fields.map(([n,l,v])=>`<label class="block text-left text-sm mt-2">${l}</label><textarea id="swal-${n}" ${n==="bio"?"data-rich-text":""} class="swal2-textarea" style="width:100%;margin:4px 0">${esc(v)}</textarea>`).join('');
+      const result=await Swal.fire({title:'แก้ไขข้อมูลบุคลากร',html,showCancelButton:true,confirmButtonText:'บันทึก',didOpen:()=>SchoolRichEditor.init(document.querySelector('#swal-bio')),preConfirm:()=>Object.fromEntries(fields.map(([n])=>[n,n==='bio'?SchoolRichEditor.getHTML(document.querySelector('#swal-bio')):document.querySelector('#swal-'+n).value]))});
       if(result.isConfirmed){const {error:uerr}=await db.from('personnel').update(result.value).eq('id',id);if(uerr)Swal.fire('ผิดพลาด',uerr.message,'error');else{await loadStaff();Swal.fire('บันทึกแล้ว','','success')}}
     }
     if(toggle){const publish=toggle.dataset.published!=='true';const {error}=await db.from('personnel').update({is_published:publish}).eq('id',toggle.dataset.toggleStaff);if(error)Swal.fire('ผิดพลาด',error.message,'error');else{await loadStaff();await stats()}}
