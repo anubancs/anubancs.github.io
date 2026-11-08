@@ -31,11 +31,16 @@
     if(!endpoint) throw new Error('ยังไม่ได้ตั้งค่า URL ของ Google Apps Script');
     if(!/^image\/(jpeg|png|webp|gif)$/i.test(file.type)) throw new Error('รองรับ JPG, PNG, WEBP และ GIF เท่านั้น');
     if(file.size>maxBytes) throw new Error('ภาพต้องมีขนาดไม่เกิน 20 MB');
+    if(onProgress) onProgress('กำลังเตรียมไฟล์ภาพ...');
+    file=await prepareImage(file);
+    if(file.size>maxBytes) throw new Error('ภาพหลังประมวลผลยังมีขนาดเกิน 20 MB');
+    if(onProgress) onProgress('กำลังตรวจสอบสิทธิ์และเตรียมส่งภาพ...');
     const {data:{session},error}=await window.schoolSupabase.auth.getSession();
     if(error||!session?.access_token) throw new Error('กรุณาเข้าสู่ระบบใหม่');
     const requestId='upload_'+Date.now()+'_'+Math.random().toString(36).slice(2);
     const values={action:'upload',request_id:requestId,access_token:session.access_token,origin:location.origin,module:moduleName,
       filename:file.name,mimeType:file.type,base64:await base64(file)};
+    if(onProgress) onProgress('กำลังส่งภาพไปยัง Google Drive...');
     return new Promise((resolve,reject)=>{
       const frame=document.createElement('iframe');
       frame.name=requestId;frame.hidden=true;frame.setAttribute('title','Google Drive upload');
@@ -72,10 +77,10 @@
     const target=document.querySelector(input.dataset.driveTarget);
     const status=document.querySelector(input.dataset.driveStatus||'');
     if(!target)return;
-    input.disabled=true;if(status)status.textContent='กำลังอัปโหลดภาพ...';
+    input.disabled=true;if(status)status.textContent='กำลังเริ่มอัปโหลดภาพ...';
     try{
       const urls=[];
-      for(const file of Array.from(input.files))urls.push((await upload(file,input.dataset.driveUpload)).url);
+      for(const file of Array.from(input.files))urls.push((await upload(file,input.dataset.driveUpload,message=>{if(status)status.textContent=message;})).url);
       target.value=(input.multiple||input.dataset.driveAppend==='true')
         ?[target.value.trim(),...urls].filter(Boolean).join('\n'):urls[0];
       target.dispatchEvent(new Event('input',{bubbles:true}));
