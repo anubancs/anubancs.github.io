@@ -28,7 +28,7 @@
  const renderDirectorMessage=(value)=>{
   const root=document.getElementById('director-message');
   if(!root||typeof value!=='string'||!value.trim())return;
-  const lines=value.split(/\\r?\\n/).map(line=>line.trim()).filter(Boolean);
+  const lines=value.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
   if(lines[0]==='สารจากผู้อำนวยการโรงเรียน')lines.shift();
   root.replaceChildren();
   let signature=false;
