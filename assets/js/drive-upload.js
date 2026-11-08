@@ -16,7 +16,7 @@
     const {data:{session},error}=await window.schoolSupabase.auth.getSession();
     if(error||!session?.access_token) throw new Error('กรุณาเข้าสู่ระบบใหม่');
     const requestId='upload_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-    const values={action:'upload',request_id:requestId,access_token:session.access_token,module:moduleName,
+    const values={action:'upload',request_id:requestId,access_token:session.access_token,origin:location.origin,module:moduleName,
       filename:file.name,mimeType:file.type,base64:await base64(file)};
     return new Promise((resolve,reject)=>{
       const frame=document.createElement('iframe');
@@ -61,6 +61,8 @@
       target.value=(input.multiple||input.dataset.driveAppend==='true')
         ?[target.value.trim(),...urls].filter(Boolean).join('\n'):urls[0];
       target.dispatchEvent(new Event('input',{bubbles:true}));
+      const preview=document.querySelector(input.dataset.drivePreview||'');
+      if(preview){preview.src=urls[0];preview.classList.remove('hidden');}
       if(status)status.textContent='อัปโหลดสำเร็จ '+urls.length+' ภาพ · URL ถูกเติมให้แล้ว';
     }catch(error){
       if(status)status.textContent=error.message;
