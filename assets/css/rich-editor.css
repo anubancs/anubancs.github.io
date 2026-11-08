@@ -10,7 +10,7 @@
 .school-rich-editor__source{display:none!important}
 .school-rich-editor:focus-within{border-color:#984761;box-shadow:0 0 0 3px #98476118}
 .rich-content{line-height:1.95;overflow-wrap:anywhere}
-.rich-content p{margin:.65em 0;text-indent:2em}
+.rich-content p{margin:.65em 0}
 .rich-content h1,.rich-content h2,.rich-content h3{font-weight:700;line-height:1.5;margin:1.1em 0 .55em;text-indent:0}
 .rich-content h1{font-size:1.65em}.rich-content h2{font-size:1.35em}.rich-content h3{font-size:1.15em}
 .rich-content ul,.rich-content ol{padding-left:1.7em;margin:.7em 0}
