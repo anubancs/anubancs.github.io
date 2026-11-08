@@ -8,7 +8,25 @@
     reader.onerror=()=>reject(new Error('อ่านไฟล์ภาพไม่สำเร็จ'));
     reader.readAsDataURL(file);
   });
-  async function upload(file,moduleName) {
+  async function prepareImage(file) {
+    if (file.type === 'image/gif' || file.size <= 2*1024*1024) return file;
+    if (!window.createImageBitmap) return file;
+    let bitmap;
+    try { bitmap = await createImageBitmap(file); }
+    catch { return file; }
+    try {
+      const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+      if (scale === 1 && file.size <= 5*1024*1024) return file;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+      if (!blob) return file;
+      return new File([blob], file.name.replace(/\\.[^.]+$/, '') + '.webp', {type:'image/webp',lastModified:Date.now()});
+    } finally { bitmap.close?.(); }
+  }
+  async function upload(file,moduleName,onProgress) {
     const endpoint=window.SCHOOL_GAS_WEB_APP_URL;
     if(!endpoint) throw new Error('ยังไม่ได้ตั้งค่า URL ของ Google Apps Script');
     if(!/^image\/(jpeg|png|webp|gif)$/i.test(file.type)) throw new Error('รองรับ JPG, PNG, WEBP และ GIF เท่านั้น');
@@ -41,7 +59,7 @@
         if(msg.result?.ok&&msg.result.url)finish(resolve,msg.result);
         else finish(reject,new Error(msg.result?.error||'Google Drive บันทึกภาพไม่สำเร็จ'));
       };
-      const timer=setTimeout(()=>finish(reject,new Error('หมดเวลารอการตอบกลับจาก Google Drive')),120000);
+      const timer=setTimeout(()=>finish(reject,new Error('Google Drive ไม่ตอบกลับภายใน 60 วินาที กรุณาลองภาพขนาดเล็กลงหรือตรวจสอบการเผยแพร่ Apps Script')),60000);
       window.addEventListener('message',onMessage);
       document.body.append(frame,form);
       form.submit();
