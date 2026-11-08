@@ -25,8 +25,7 @@
     return box.innerHTML;
   };
   const isHtml = value => /<\/?(p|br|strong|b|em|i|u|s|h[1-3]|ol|ul|li|blockquote|a)(\s|>|\/)/i.test(String(value || ''));
-  const legacy = value => String(value || '').split(/\r?
-/).map(x => x.trim()).filter(Boolean).map(x => '<p>'+escape(x)+'</p>').join('');
+  const legacy = value => String(value || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean).map(x => '<p>'+escape(x)+'</p>').join('');
   const escape = value => String(value).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const normalize = value => isHtml(value) ? sanitize(value) : legacy(value);
   const editors = new WeakMap();
