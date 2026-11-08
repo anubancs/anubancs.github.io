@@ -1,10 +1,10 @@
 /* Shared WYSIWYG editor and public rich-content typography */
-.school-rich-editor{width:100%;min-width:0;color:#292326;background:#fff;border:1px solid #e5cbd3;border-radius:14px;overflow:hidden}
-.school-rich-editor .ql-toolbar.ql-snow{border:0;border-bottom:1px solid #f0dce2;background:#fff7f9;display:flex;flex-wrap:wrap;gap:3px}
-.school-rich-editor .ql-container.ql-snow{border:0;font:inherit;font-size:16px}
-.school-rich-editor .ql-editor{min-height:190px;line-height:1.85;padding:14px 16px;overflow-wrap:anywhere}
+.school-rich-editor{width:100%;min-width:0;color:#292326;background:#fff;border:1px solid #e5cbd3;border-radius:14px;overflow:visible;position:relative;isolation:isolate}
+.school-rich-editor .ql-toolbar.ql-snow{border:0;border-bottom:1px solid #f0dce2;border-radius:13px 13px 0 0;background:#fff7f9;display:flex;flex-wrap:wrap;gap:3px;position:relative;z-index:5;overflow:visible}
+.school-rich-editor .ql-container.ql-snow{border:0;border-radius:0 0 13px 13px;font:inherit;font-size:16px;position:relative;z-index:1}
+.school-rich-editor .ql-editor{min-height:190px;line-height:1.85;padding:14px 16px;overflow-wrap:anywhere;border-radius:0 0 13px 13px}
 .school-rich-editor .ql-editor.ql-blank::before{font-style:normal;color:#9b8790}
-.school-rich-editor .ql-toolbar button.ql-firstLineIndent{width:30px;font-size:19px;font-weight:700;color:#6f263f}
+.school-rich-editor .ql-toolbar .ql-picker.ql-expanded .ql-picker-options{z-index:20;visibility:visible;opacity:1}\n.school-rich-editor .ql-toolbar button.ql-firstLineIndent{width:30px;font-size:19px;font-weight:700;color:#6f263f}
 .school-rich-editor .ql-toolbar button.ql-firstLineIndent::after{content:'บรรทัดแรก';font-size:9px;display:block;line-height:9px;margin-top:-3px;white-space:nowrap}
 .school-rich-editor .ql-editor .ql-first-line-indent-1{ text-indent:2em }
 .school-rich-editor__source{display:none!important}
