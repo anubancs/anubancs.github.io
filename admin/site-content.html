@@ -43,15 +43,17 @@ window.saveSchoolSection=async function(key,b){
   if(s.list){
    const input=b.parentElement.querySelector('[data-list]');
    if(!input)throw new Error('ไม่พบช่องกรอกข้อมูล');
-   value=input.value.split('\n').map(line=>line.trim()).filter(Boolean).map(line=>{
-    const parts=line.split('|').map(x=>x.trim());
+   value=input.value.split(/\r?\n/).filter(line=>line.trim()!=='').map(line=>{
+    // Remove only the single conventional padding space around each | delimiter.
+    // Any additional spaces inside a field remain exactly as entered.
+    const parts=line.split('|').map(x=>x.replace(/^ /,'').replace(/ $/,''));
     return Object.fromEntries(s.columns.map((key,i)=>[key,parts[i]||'']));
    });
    if(value.some(row=>row.url&&!String(row.url).startsWith('https://')))throw new Error('URL ของลิงก์ต้องขึ้นต้นด้วย https://');
    if(s.key==='home_video_posts'&&value.some(row=>!['youtube','tiktok','google-drive','facebook'].includes(String(row.platform).toLowerCase())||!row.title||!row.url))throw new Error('กรุณาระบุแพลตฟอร์ม (youtube/tiktok/google-drive/facebook), ชื่อคลิป และ URL ให้ครบ');
   }else{
    value={};
-   b.parentElement.querySelectorAll('[data-field]').forEach(el=>value[el.dataset.field]=el.value.trim());
+   b.parentElement.querySelectorAll('[data-field]').forEach(el=>value[el.dataset.field]=el.value);
   }
   const {data,error}=await db.from('settings').upsert({key:s.key,value,is_public:true},{onConflict:'key'}).select('key').single();
   if(error)throw error;
