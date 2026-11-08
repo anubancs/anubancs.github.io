@@ -14,6 +14,19 @@ const IMAGE_TYPES = ['image/jpeg','image/png','image/webp','image/gif'];
 function doGet(e) {
   const action = e && e.parameter && e.parameter.action || 'health';
   if (action === 'health') return json_({ok:true,service:'school-drive-media'});
+  if (action === 'upload_status') {
+    const requestId = String(e.parameter.request_id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    const callback = String(e.parameter.callback || '');
+    if (!requestId || !/^schoolDriveUploadCallback_[a-zA-Z0-9_]+$/.test(callback)) {
+      return json_({ok:false,error:'Invalid upload status request'});
+    }
+    const cached = CacheService.getScriptCache().get('upload_result_' + requestId);
+    const result = cached ? JSON.parse(cached) : {ok:true,pending:true};
+    if (cached) CacheService.getScriptCache().remove('upload_result_' + requestId);
+    const body = JSON.stringify(result).replace(/</g,'\\u003c');
+    return ContentService.createTextOutput(callback + '(' + body + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   if (action !== 'files') return json_({ok:false,error:'Unsupported action'});
   const library = String(e.parameter.library || '');
   const folderId = library === 'personnel' ? PERSONNEL_IMAGE_LIBRARY_FOLDER_ID : driveFolderId_();
@@ -39,8 +52,13 @@ function doPost(e) {
   try {
     if (p.action === 'upload') {
       const requestId = String(p.request_id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
-      try { return uploadResponse_(requestId, uploadImage_(p), p.origin); }
-      catch (uploadError) { return uploadResponse_(requestId, {ok:false,error:String(uploadError && uploadError.message || uploadError)}, p.origin); }
+      let result;
+      try { result = uploadImage_(p); }
+      catch (uploadError) { result = {ok:false,error:String(uploadError && uploadError.message || uploadError)}; }
+      if (requestId) {
+        CacheService.getScriptCache().put('upload_result_' + requestId, JSON.stringify(result), 600);
+      }
+      return HtmlService.createHtmlOutput('อัปโหลดเสร็จแล้ว');
     }
     if (p.action === 'notify') return notify_(p);
     if (p.action === 'ai_summary') {
