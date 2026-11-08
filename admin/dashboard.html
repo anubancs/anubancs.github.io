@@ -57,7 +57,7 @@
       <input class="rounded-xl p-3 text-black" name="full_name" placeholder="ชื่อ-นามสกุล" required maxlength="200">
       <input class="rounded-xl p-3 text-black" name="position" placeholder="ตำแหน่ง" required maxlength="200">
       <input class="rounded-xl p-3 text-black" name="department" placeholder="กลุ่มสาระ/กลุ่มงาน">
-      <div><input class="w-full rounded-xl p-3 text-black" name="photo_url" type="url" placeholder="URL รูปภาพ"><label class="block text-sm mt-2">อัปโหลดรูปบุคลากร<input id="staff-photo-file" class="block mt-1" type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-drive-upload="personnel" data-drive-target="#staff-form [name=photo_url]" data-drive-status="#staff-photo-status"></label><p id="staff-photo-status" class="text-xs mt-1 opacity-70" role="status"></p></div>
+      <div><input class="w-full rounded-xl p-3 text-black" name="photo_url" type="url" placeholder="URL รูปภาพ"><div class="flex flex-wrap gap-3 mt-2"><label class="text-sm">อัปโหลดภาพใหม่<input id="staff-photo-file" class="block mt-1" type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-drive-upload="personnel" data-drive-target="#staff-form [name=photo_url]" data-drive-preview="#staff-photo-preview" data-drive-status="#staff-photo-status"></label><button type="button" class="text-wine underline text-sm" data-drive-library="personnel" data-drive-target="#staff-form [name=photo_url]" data-drive-preview="#staff-photo-preview" data-drive-status="#staff-photo-status">เลือกภาพเดิมจาก Google Drive</button></div><img id="staff-photo-preview" class="hidden mt-3 w-24 h-24 rounded-xl object-cover border" alt="ตัวอย่างรูปบุคลากร"><p id="staff-photo-status" class="text-xs mt-1 opacity-70" role="status"></p></div>
       <input class="rounded-xl p-3 text-black md:col-span-2" name="personal_website_url" type="url" placeholder="เว็บไซต์ส่วนตัว (https://...)">
       <textarea data-rich-text class="rounded-xl p-3 text-black md:col-span-2" name="bio" rows="3" placeholder="ประวัติย่อ"></textarea>
       <button class="brand-gradient text-white rounded-xl p-3 md:col-span-2">เพิ่มบุคลากร (ยังไม่เผยแพร่)</button>
@@ -69,7 +69,7 @@
   </section>
   <p id="status" role="status" class="text-sm opacity-60 mt-5"></p>
 </main>
-<script src="../assets/js/supabase.js"></script><script src="../assets/js/drive-upload.js"></script>
+<script src="../assets/js/supabase.js"></script><script src="../assets/js/drive-upload.js?v=20261108-personnel"></script><script src="../assets/js/drive-library.js?v=20261108-personnel"></script>
 <script>
 (async()=>{
   const db=schoolSupabase, $=s=>document.querySelector(s);
@@ -171,7 +171,9 @@
     if(edit){
       const id=edit.dataset.editStaff;const {data,error}=await db.from('personnel').select('*').eq('id',id).single();if(error)return Swal.fire('ผิดพลาด',error.message,'error');
       const fields=[['full_name','ชื่อ-นามสกุล',data.full_name],['position','ตำแหน่ง',data.position],['department','กลุ่มงาน',data.department||''],['photo_url','URL รูป',data.photo_url||''],['personal_website_url','เว็บไซต์ส่วนตัว',data.personal_website_url||''],['bio','ประวัติ',data.bio||'']];
-      const html=fields.map(([n,l,v])=>`<label class="block text-left text-sm mt-2">${l}</label><textarea id="swal-${n}" ${n==="bio"?"data-rich-text":""} class="swal2-textarea" style="width:100%;margin:4px 0">${esc(v)}</textarea>`).join('');
+      const html=fields.map(([n,l,v])=>n==='photo_url'
+        ? `<label class="block text-left text-sm mt-2">${l}</label><input id="swal-photo_url" type="url" value="${esc(v)}" class="swal2-input" style="width:100%;margin:4px 0"><div class="flex flex-wrap items-center gap-3 mt-2"><label class="text-sm">อัปโหลดภาพใหม่<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="block mt-1" data-drive-upload="personnel" data-drive-target="#swal-photo_url" data-drive-preview="#swal-photo-preview" data-drive-status="#swal-photo-status"></label><button type="button" class="text-wine underline text-sm" data-drive-library="personnel" data-drive-target="#swal-photo_url" data-drive-preview="#swal-photo-preview" data-drive-status="#swal-photo-status">เลือกภาพเดิมจาก Google Drive</button></div><img id="swal-photo-preview" src="${esc(v)}" class="${v?'':'hidden'} mt-3 w-24 h-24 rounded-xl object-cover border" alt="ตัวอย่างรูปบุคลากร"><p id="swal-photo-status" class="text-xs mt-1 opacity-70"></p>`
+        : `<label class="block text-left text-sm mt-2">${l}</label><textarea id="swal-${n}" ${n==="bio"?"data-rich-text":""} class="swal2-textarea" style="width:100%;margin:4px 0">${esc(v)}</textarea>`).join('');
       const result=await Swal.fire({title:'แก้ไขข้อมูลบุคลากร',html,showCancelButton:true,confirmButtonText:'บันทึก',didOpen:()=>SchoolRichEditor.init(document.querySelector('#swal-bio')),preConfirm:()=>Object.fromEntries(fields.map(([n])=>[n,n==='bio'?SchoolRichEditor.getHTML(document.querySelector('#swal-bio')):document.querySelector('#swal-'+n).value]))});
       if(result.isConfirmed){const {error:uerr}=await db.from('personnel').update(result.value).eq('id',id);if(uerr)Swal.fire('ผิดพลาด',uerr.message,'error');else{await loadStaff();Swal.fire('บันทึกแล้ว','','success')}}
     }
