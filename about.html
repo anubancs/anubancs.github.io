@@ -28,7 +28,7 @@
  const renderDirectorMessage=(value)=>{
   const root=document.getElementById('director-message');
   if(!root||typeof value!=='string'||!value.trim())return;
-  if(/<\\/?(p|br|strong|b|em|i|u|h[1-3]|ol|ul|li|blockquote|a)(\\s|>|\\/)/i.test(value)){root.innerHTML=SchoolRichContent.normalize(value);root.classList.add('rich-content');return;}
+  if(/<(p|br|strong|b|em|i|u|h[1-3]|ol|ul|li|blockquote|a)(\s|>|\/)/i.test(value)){root.innerHTML=SchoolRichContent.normalize(value);root.classList.add('rich-content');return;}
   const lines=value.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
   if(lines[0]==='สารจากผู้อำนวยการโรงเรียน')lines.shift();
   root.replaceChildren();root.classList.add('rich-content');
