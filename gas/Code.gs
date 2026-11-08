@@ -40,7 +40,7 @@ function doPost(e) {
     if (p.action === 'upload') {
       const requestId = String(p.request_id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
       try { return uploadResponse_(requestId, uploadImage_(p), p.origin); }
-      catch (uploadError) { return uploadResponse_(requestId, {ok:false,error:String(uploadError && uploadError.message || uploadError)}); }
+      catch (uploadError) { return uploadResponse_(requestId, {ok:false,error:String(uploadError && uploadError.message || uploadError)}, p.origin); }
     }
     if (p.action === 'notify') return notify_(p);
     if (p.action === 'ai_summary') {
