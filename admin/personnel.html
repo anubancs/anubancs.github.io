@@ -15,6 +15,34 @@
  const {data:admin,error:adminError}=await db.from('admin_users').select('role').eq('user_id',user.id).maybeSingle();
  if(adminError||!admin){location.replace('login.html');return}
  $('#identity').textContent=(user.email||'ผู้ดูแล')+' · '+admin.role;
+ const canResetPassword=admin.role==='owner';
+ async function resetUserPassword(userId,userLabel){
+  if(!userId){await Swal.fire('บัญชีนี้ยังไม่ได้เชื่อมกับผู้ใช้','','warning');return}
+  const result=await Swal.fire({
+   title:'ตั้งรหัสผ่านใหม่',
+   html:'<p class="text-sm text-left mb-3">บัญชี: '+esc(userLabel||'ผู้ใช้')+'</p><label class="block text-left text-sm mb-1">รหัสผ่านใหม่ (อย่างน้อย 10 ตัวอักษร)</label><input id="new-user-password" type="password" autocomplete="new-password" class="swal2-input" placeholder="รหัสผ่านใหม่"><label class="block text-left text-sm mt-3 mb-1">ยืนยันรหัสผ่าน</label><input id="confirm-user-password" type="password" autocomplete="new-password" class="swal2-input" placeholder="กรอกรหัสผ่านอีกครั้ง">',
+   showCancelButton:true,confirmButtonText:'บันทึกรหัสผ่าน',cancelButtonText:'ยกเลิก',
+   preConfirm:()=>{
+    const password=document.querySelector('#new-user-password').value;
+    const confirm=document.querySelector('#confirm-user-password').value;
+    if(password.length<10||password.length>72){Swal.showValidationMessage('รหัสผ่านต้องมีความยาว 10–72 ตัวอักษร');return false}
+    if(password!==confirm){Swal.showValidationMessage('รหัสผ่านทั้งสองช่องไม่ตรงกัน');return false}
+    return password;
+   }
+  });
+  if(!result.isConfirmed)return;
+  Swal.fire({title:'กำลังตั้งรหัสผ่าน...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  try{
+   const {data,error}=await db.functions.invoke('school-admin-password',{body:{user_id:userId,password:result.value}});
+   if(error)throw error;
+   if(!data?.ok)throw new Error(data?.error||'ไม่สามารถตั้งรหัสผ่านได้');
+   await Swal.fire('ตั้งรหัสผ่านสำเร็จ','บันทึกรหัสผ่านใหม่ให้ '+esc(userLabel||'ผู้ใช้')+' แล้ว กรุณาแจ้งรหัสผ่านผ่านช่องทางส่วนตัวและปลอดภัย','success');
+  }catch(error){
+   let message=error.message||String(error);
+   if(error.context&&typeof error.context.json==='function'){try{const payload=await error.context.json();message=payload.error||message}catch{}}
+   await Swal.fire('ตั้งรหัสผ่านไม่สำเร็จ',message,'error');
+  }
+ }
  let people=[],accounts=[];
  async function load(){
   $('#staff-status').textContent='กำลังโหลดข้อมูลบุคลากรและบัญชีผู้ใช้...';
@@ -28,7 +56,7 @@
   $('#staff-list').innerHTML=people.map(p=>{
    const choices=accounts.filter(a=>!linkedElsewhere.has(a.user_id)||a.user_id===p.auth_user_id);
    const opts='<option value="">— ยังไม่เชื่อมบัญชี —</option>'+choices.map(a=>'<option value="'+a.user_id+'" '+(a.user_id===p.auth_user_id?'selected':'')+'>'+esc(a.full_name||'ไม่ระบุชื่อ')+' · '+esc(a.email||'ไม่มีอีเมล')+'</option>').join('');
-   return '<article class="border rounded-2xl p-4 grid lg:grid-cols-[1fr_minmax(260px,1fr)_auto] gap-4 items-center"><div><b>'+esc(p.full_name)+'</b><p class="text-sm opacity-70">'+esc(p.position)+' · '+esc(p.department||'ไม่ระบุกลุ่มงาน')+'</p><p class="text-xs mt-1 '+(p.is_published?'text-green-700':'text-amber-700')+'">'+(p.is_published?'เผยแพร่บนเว็บไซต์แล้ว':'ฉบับร่าง · บุคคลทั่วไปยังไม่เห็น')+'</p></div><label class="text-sm">บัญชีผู้ใช้ที่เชื่อม<input type="hidden"><select data-link="'+p.id+'" class="block w-full rounded-xl border p-3 text-black mt-1">'+opts+'</select></label><div class="flex flex-wrap gap-3"><button class="underline text-wine" data-publish="'+p.id+'" data-state="'+p.is_published+'">'+(p.is_published?'ถอนเผยแพร่':'เผยแพร่')+'</button></div></article>';
+   return '<article class="border rounded-2xl p-4 grid lg:grid-cols-[1fr_minmax(260px,1fr)_auto] gap-4 items-center"><div><b>'+esc(p.full_name)+'</b><p class="text-sm opacity-70">'+esc(p.position)+' · '+esc(p.department||'ไม่ระบุกลุ่มงาน')+'</p><p class="text-xs mt-1 '+(p.is_published?'text-green-700':'text-amber-700')+'">'+(p.is_published?'เผยแพร่บนเว็บไซต์แล้ว':'ฉบับร่าง · บุคคลทั่วไปยังไม่เห็น')+'</p></div><label class="text-sm">บัญชีผู้ใช้ที่เชื่อม<input type="hidden"><select data-link="'+p.id+'" class="block w-full rounded-xl border p-3 text-black mt-1">'+opts+'</select></label><div class="flex flex-wrap gap-3"><button class="underline text-wine" data-publish="'+p.id+'" data-state="'+p.is_published+'">'+(p.is_published?'ถอนเผยแพร่':'เผยแพร่')+'</button>'+(canResetPassword&&p.auth_user_id?'<button class="underline text-wine" data-reset-password="'+p.auth_user_id+'" data-user-label="'+esc(p.full_name)+'">ตั้งรหัสผ่าน</button>':'')+'</div></article>';
   }).join('')||'<p class="opacity-60">ยังไม่มีข้อมูลบุคลากร กรุณาเพิ่มข้อมูลจาก Dashboard ก่อน</p>';
   $('#staff-status').textContent='แสดง '+people.length+' รายชื่อ · พบ '+accounts.length+' บัญชีผู้ใช้เดิม · '+people.filter(p=>p.auth_user_id).length+' รายชื่อเชื่อมบัญชีแล้ว';
   await loadRequests();
@@ -51,6 +79,8 @@
   await load();Swal.fire({toast:true,position:'top-end',icon:'success',title:'บันทึกการเชื่อมบัญชีแล้ว',showConfirmButton:false,timer:1700});
  });
  $('#staff-list').addEventListener('click',async e=>{
+  const reset=e.target.closest('[data-reset-password]');
+  if(reset){await resetUserPassword(reset.dataset.resetPassword,reset.dataset.userLabel);return}
   const b=e.target.closest('[data-publish]');if(!b)return;
   const next=b.dataset.state!=='true';const p=people.find(x=>x.id===b.dataset.publish);
   const confirm=await Swal.fire({title:next?'เผยแพร่ข้อมูลบุคลากร?':'ถอนการเผยแพร่?',text:p?.full_name||'',icon:'question',showCancelButton:true,confirmButtonText:next?'เผยแพร่':'ถอนเผยแพร่',cancelButtonText:'ยกเลิก'});
