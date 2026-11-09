@@ -13,12 +13,14 @@
  </section>
  <section class="glass rounded-2xl p-6 mb-8">
   <div class="flex flex-wrap justify-between items-center gap-3 mb-4"><div><h2 class="text-xl font-bold">สมาชิกผู้ดูแลระบบ</h2><p class="text-sm opacity-70">เลือกบัญชีจากผู้ใช้ทั้งหมดใน Supabase Authentication โดยระบบจะแสดงชื่อ-นามสกุล ตำแหน่ง และอีเมล เพื่อให้เลือกบัญชีได้ถูกต้อง</p></div></div>
-  <form id="add-member" class="grid md:grid-cols-[minmax(0,2fr)_1fr_auto] gap-3 mb-5">
+  <form id="add-member" class="grid md:grid-cols-[minmax(0,2fr)_1fr_auto_auto] gap-3 mb-5">
    <select name="user_id" id="auth-user-select" class="rounded-xl border p-3 text-black" required><option value="">กำลังโหลดรายชื่อผู้ใช้...</option></select>
    <select name="group_id" id="member-group" class="rounded-xl border p-3 text-black" required></select>
    <button id="add-member-button" type="submit" class="brand-gradient text-white rounded-xl px-5 py-3">เพิ่มสมาชิก</button>
+   <button id="reset-selected-user" type="button" class="border border-wine text-wine rounded-xl px-5 py-3">ตั้งรหัสผ่าน</button>
   </form>
   <p id="member-status" role="status" aria-live="polite" class="text-sm mt-2 text-amber-700"></p>
+  <p class="text-xs opacity-60 mb-4">ตั้งรหัสผ่านได้ทั้งบัญชีที่เป็นสมาชิกแล้วและบัญชีที่ยังไม่ได้กำหนดกลุ่มงาน โดยต้องเลือกบัญชีในรายการด้านบนหรือกดปุ่มในรายชื่อสมาชิก</p>
   <div id="members" class="space-y-3">กำลังโหลด...</div>
  </section>
  <section class="glass rounded-2xl p-6">
@@ -41,6 +43,33 @@
  if(me.role!=='owner'){document.querySelector('main').innerHTML='<section class="glass rounded-2xl p-8"><h1 class="text-2xl font-bold">ไม่มีสิทธิ์เข้าถึง</h1><p class="mt-2">เฉพาะผู้ดูแลสูงสุด (Owner) เท่านั้นที่กำหนดสิทธิ์และจัดการสมาชิกได้</p><a class="underline text-wine mt-4 inline-block" href="dashboard.html">กลับ Dashboard</a></section>';return}
  $('#identity').textContent=(user.email||'ผู้ดูแล')+' · Owner';
  let groups=[],members=[],authUsers=[];
+ async function resetUserPassword(userId,userLabel){
+  if(!userId){await Swal.fire('กรุณาเลือกบัญชีผู้ใช้','','warning');return}
+  const result=await Swal.fire({
+   title:'ตั้งรหัสผ่านใหม่',
+   html:'<p class="text-sm text-left mb-3">บัญชี: '+esc(userLabel||'ผู้ใช้')+'</p><label class="block text-left text-sm mb-1">รหัสผ่านใหม่ (อย่างน้อย 10 ตัวอักษร)</label><input id="new-user-password" type="password" autocomplete="new-password" class="swal2-input" placeholder="รหัสผ่านใหม่"><label class="block text-left text-sm mt-3 mb-1">ยืนยันรหัสผ่าน</label><input id="confirm-user-password" type="password" autocomplete="new-password" class="swal2-input" placeholder="กรอกรหัสผ่านอีกครั้ง">',
+   showCancelButton:true,confirmButtonText:'บันทึกรหัสผ่าน',cancelButtonText:'ยกเลิก',
+   preConfirm:()=>{
+    const password=document.querySelector('#new-user-password').value;
+    const confirm=document.querySelector('#confirm-user-password').value;
+    if(password.length<10||password.length>72){Swal.showValidationMessage('รหัสผ่านต้องมีความยาว 10–72 ตัวอักษร');return false}
+    if(password!==confirm){Swal.showValidationMessage('รหัสผ่านทั้งสองช่องไม่ตรงกัน');return false}
+    return password;
+   }
+  });
+  if(!result.isConfirmed)return;
+  Swal.fire({title:'กำลังตั้งรหัสผ่าน...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  try{
+   const {data,error}=await db.functions.invoke('school-admin-password',{body:{user_id:userId,password:result.value}});
+   if(error)throw error;
+   if(!data?.ok)throw new Error(data?.error||'ไม่สามารถตั้งรหัสผ่านได้');
+   await Swal.fire('ตั้งรหัสผ่านสำเร็จ','บันทึกรหัสผ่านใหม่ให้ '+esc(userLabel||'ผู้ใช้')+' แล้ว กรุณาแจ้งรหัสผ่านให้ผู้ใช้ผ่านช่องทางส่วนตัวและปลอดภัย','success');
+  }catch(error){
+   let message=error.message||String(error);
+   if(error.context&&typeof error.context.json==='function'){try{const payload=await error.context.json();message=payload.error||message}catch{}}
+   await Swal.fire('ตั้งรหัสผ่านไม่สำเร็จ',message,'error');
+  }
+ }
  async function loadGroups(){
   const {data,error}=await db.from('admin_groups').select('id,name,slug,description').order('name');
   if(error)throw error;groups=data||[];
@@ -62,7 +91,7 @@
   const userMap=new Map(authUsers.map(u=>[u.user_id,u]));
   $('#members').innerHTML=members.map(m=>{
    const group=groups.find(g=>g.id===m.group_id);
-   return '<article class="border rounded-xl p-4 grid md:grid-cols-[1fr_220px_auto] gap-3 items-center"><div><b class="text-sm">'+esc(userMap.get(m.user_id)?.full_name||'ไม่ระบุชื่อ')+'</b><p class="text-xs opacity-70">'+esc(userMap.get(m.user_id)?.position||'')+' · '+esc(userMap.get(m.user_id)?.email||'ไม่พบอีเมลบัญชี')+'</p><p class="text-xs opacity-60 break-all">User ID: '+esc(m.user_id)+'<br>บทบาท: '+esc(m.role)+(m.role==='owner'?' · สิทธิ์สูงสุด':'')+'</p></div><select class="rounded-lg border p-2 text-black" data-member-group="'+m.user_id+'" '+(m.role==='owner'?'disabled':'')+'><option value="">ยังไม่อยู่ในกลุ่ม</option>'+groups.map(g=>'<option value="'+g.id+'" '+(m.group_id===g.id?'selected':'')+'>'+esc(g.name)+'</option>').join('')+'</select><button class="text-red-700 underline text-sm" data-remove-member="'+m.user_id+'" '+(m.role==='owner'?'disabled':'')+'>ถอนสิทธิ์</button></article>';
+   return '<article class="border rounded-xl p-4 grid md:grid-cols-[1fr_220px_auto_auto] gap-3 items-center"><div><b class="text-sm">'+esc(userMap.get(m.user_id)?.full_name||'ไม่ระบุชื่อ')+'</b><p class="text-xs opacity-70">'+esc(userMap.get(m.user_id)?.position||'')+' · '+esc(userMap.get(m.user_id)?.email||'ไม่พบอีเมลบัญชี')+'</p><p class="text-xs opacity-60 break-all">User ID: '+esc(m.user_id)+'<br>บทบาท: '+esc(m.role)+(m.role==='owner'?' · สิทธิ์สูงสุด':'')+'</p></div><select class="rounded-lg border p-2 text-black" data-member-group="'+m.user_id+'" '+(m.role==='owner'?'disabled':'')+'><option value="">ยังไม่อยู่ในกลุ่ม</option>'+groups.map(g=>'<option value="'+g.id+'" '+(m.group_id===g.id?'selected':'')+'>'+esc(g.name)+'</option>').join('')+'</select><button class="text-wine underline text-sm" data-reset-password="'+m.user_id+'" data-user-label="'+esc(userMap.get(m.user_id)?.full_name||userMap.get(m.user_id)?.email||'ผู้ใช้')+'">ตั้งรหัสผ่าน</button><button class="text-red-700 underline text-sm" data-remove-member="'+m.user_id+'" '+(m.role==='owner'?'disabled':'')+'>ถอนสิทธิ์</button></article>';
   }).join('')||'<p class="opacity-60">ยังไม่มีสมาชิกผู้ดูแล</p>';
  }
  async function loadPermissions(){
@@ -91,12 +120,20 @@
    button.disabled=false;button.textContent='เพิ่มสมาชิก';
   }
  });
+ $('#reset-selected-user').addEventListener('click',async()=>{
+  const select=$('#auth-user-select'),id=select.value;
+  const option=select.selectedOptions[0];
+  if(!id){await Swal.fire('กรุณาเลือกบัญชีผู้ใช้','','warning');return}
+  await resetUserPassword(id,option?.textContent||'ผู้ใช้');
+ });
  $('#members').addEventListener('change',async e=>{
   const s=e.target.closest('[data-member-group]');if(!s)return;
   const {error}=await db.from('admin_users').update({group_id:s.value||null}).eq('user_id',s.dataset.memberGroup);
   if(error){Swal.fire('เปลี่ยนกลุ่มไม่สำเร็จ',error.message,'error');await loadMembers()}else Swal.fire({toast:true,position:'top-end',icon:'success',title:'บันทึกกลุ่มงานแล้ว',showConfirmButton:false,timer:1500});
  });
  $('#members').addEventListener('click',async e=>{
+  const reset=e.target.closest('[data-reset-password]');
+  if(reset){await resetUserPassword(reset.dataset.resetPassword,reset.dataset.userLabel);return}
   const b=e.target.closest('[data-remove-member]');if(!b)return;
   const ok=await Swal.fire({title:'ถอนสิทธิ์ผู้ใช้นี้?',text:'ผู้ใช้นี้จะไม่สามารถเข้าระบบผู้ดูแลได้',icon:'warning',showCancelButton:true,confirmButtonText:'ถอนสิทธิ์',cancelButtonText:'ยกเลิก'});
   if(!ok.isConfirmed)return;
