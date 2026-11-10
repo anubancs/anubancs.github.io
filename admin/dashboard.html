@@ -93,7 +93,16 @@
     }
     const titleInput=newsForm.elements.title,slugInput=newsForm.elements.slug;
     if(!titleInput.checkValidity()){titleInput.reportValidity();return}
-    if(!/^[a-z0-9-]+$/.test(slugInput.value.trim())){slugInput.setCustomValidity('กรุณากรอก Slug ด้วยตัวอักษรภาษาอังกฤษพิมพ์เล็ก ตัวเลข หรือเครื่องหมาย - เท่านั้น');slugInput.reportValidity();slugInput.setCustomValidity('');return}
+    const normalizedSlug=slugInput.value.trim().toLowerCase().replace(/[\\s_]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+    if(!normalizedSlug){
+      slugInput.setCustomValidity('กรุณากรอก Slug ภาษาอังกฤษ เช่น school-news-2569');
+      slugInput.reportValidity();slugInput.setCustomValidity('');slugInput.focus();return;
+    }
+    if(!/^[a-z0-9-]+$/.test(normalizedSlug)){
+      await Swal.fire('Slug ยังไม่ถูกต้อง','ใช้เฉพาะ a-z, 0-9 และเครื่องหมาย - เช่น school-news-2569 โดยระบบจะปรับตัวพิมพ์ใหญ่และช่องว่างให้อัตโนมัติ','warning');
+      slugInput.focus();return;
+    }
+    slugInput.value=normalizedSlug;
     const contentInput=newsForm.elements.content;
     const editor=SchoolRichEditor.init(contentInput);
     const contentHtml=editor.getHTML();
