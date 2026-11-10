@@ -1,0 +1,44 @@
+name: Q-Info attendance sync
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 2 * * 1-5' # 09:30 Asia/Bangkok, weekdays
+permissions:
+  contents: write
+concurrency:
+  group: qinfo-attendance-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Collect and aggregate Q-Info attendance
+        run: node scripts/qinfo-attendance.mjs
+        env:
+          QINFO_USERNAME: ${{ secrets.QINFO_USERNAME }}
+          QINFO_PASSWORD: ${{ secrets.QINFO_PASSWORD }}
+          QINFO_HOST_ID: ${{ vars.QINFO_HOST_ID || '1060220117' }}
+          QINFO_ACADEMIC_YEAR: ${{ vars.QINFO_ACADEMIC_YEAR || '2026' }}
+      - name: Commit aggregate-only reports
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/attendance
+          if git diff --cached --quiet; then
+            echo "No attendance changes to publish."
+          else
+            git commit -m "chore: sync aggregate Q-Info attendance"
+            git push
+          fi
