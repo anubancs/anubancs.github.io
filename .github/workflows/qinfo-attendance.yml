@@ -1,6 +1,11 @@
 name: Q-Info attendance sync
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/qinfo-attendance.mjs'
+      - '.github/workflows/qinfo-attendance.yml'
   schedule:
     - cron: '30 2 * * 1-5' # 09:30 Asia/Bangkok, weekdays
 permissions:
