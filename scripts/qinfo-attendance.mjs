@@ -151,7 +151,30 @@ function dateCompact(iso) { return iso.replaceAll('-', ''); }
 
 try {
   await login();
-  await page.goto(REPORT_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+  // Open the authenticated report shell first and discover the actual report
+  // navigation exposed to this account. Q-Info may redirect unknown/direct
+  // report URLs to its default school-conclusion page.
+  await page.goto(BASE + '/pages/index.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForTimeout(2000);
+  const reportNav = await page.locator('a[href], [onclick]').evaluateAll(nodes =>
+    nodes.map(node => ({
+      text: (node.innerText || node.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 100),
+      href: node.getAttribute('href') || '',
+      onclick: node.getAttribute('onclick') || ''
+    })).filter(x => /มาเรียน|สถิติ|attendance|reportAttendStat21/i.test(x.text + ' ' + x.href + ' ' + x.onclick)).slice(0, 20)
+  );
+  const reportAnchor = page.locator('a[href*="reportAttendStat21"]').first();
+  if (await reportAnchor.count()) {
+    await reportAnchor.click();
+  } else {
+    const reportMenu = page.getByText(/สถิติการมาเรียน|รายงานการมาเรียน|สถิติ.*มาเรียน/i).first();
+    if (await reportMenu.isVisible().catch(() => false)) await reportMenu.click();
+    else await page.goto(REPORT_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  }
+  await page.waitForLoadState('domcontentloaded').catch(() => {});
+  await page.waitForTimeout(2500);
+
   // The report page can render without automatically firing its year-change
   // handler in a headless session. Trigger the same handler used by the year
   // selector, then wait for the enrollment request rather than sleeping blindly.
@@ -188,7 +211,7 @@ try {
       yearValue: document.querySelector('#year, select[name="year"]')?.value || null
     }));
     throw new Error('Could not observe getCountStudent response after triggering ' + reportTrigger +
-      '; reportState=' + JSON.stringify(reportState));
+      '; reportState=' + JSON.stringify({ ...reportState, reportNav }));
   }
   if (!attendanceDocs.length) throw new Error('Could not observe morning_attendance JSON; verify report page/date and authorized access');
   if (!rosterArrays.length) throw new Error('Could not observe student roster response needed to map attendance IDs to classes');
