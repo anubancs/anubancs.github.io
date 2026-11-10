@@ -160,9 +160,9 @@ try {
   // Navigate through the exact menu hierarchy exposed by the teacher account.
   // Direct query-string navigation can be redirected to the default dashboard.
   const menuSteps = [
-    { label: '2. รายงาน', pattern: /2\\s*\\.?\\s*รายงาน/ },
-    { label: '2.2 สถิติการมาเรียน', pattern: /2\\s*\\.?\\s*2\\s*สถิติการมาเรียน|สถิติการมาเรียน/ },
-    { label: '2.2.1 รายวัน', pattern: /2\\s*\\.?\\s*2\\s*\\.?\\s*1\\s*รายวัน|รายวัน/ }
+    { label: '2. รายงาน', pattern: /2\s*\\.?\s*รายงาน/ },
+    { label: '2.2 สถิติการมาเรียน', pattern: /2\s*\\.?\s*2\s*สถิติการมาเรียน|สถิติการมาเรียน/ },
+    { label: '2.2.1 รายวัน', pattern: /2\s*\\.?\s*2\s*\\.?\s*1\s*รายวัน|รายวัน/ }
   ];
   const clickedMenu = [];
   for (const step of menuSteps) {
@@ -185,7 +185,7 @@ try {
   }
   const reportNav = await page.locator('a[href], [onclick], [role="menuitem"], li, button').evaluateAll(nodes =>
     nodes.map(node => ({
-      text: (node.innerText || node.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 100),
+      text: (node.innerText || node.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 100),
       href: node.getAttribute('href') || '',
       onclick: node.getAttribute('onclick') || ''
     })).filter(x => /รายงาน|สถิติ|มาเรียน|รายวัน|attendance|reportAttendStat21/i.test(x.text + ' ' + x.href + ' ' + x.onclick)).slice(0, 40)
