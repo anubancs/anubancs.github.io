@@ -93,7 +93,8 @@
       target.value=(input.multiple||input.dataset.driveAppend==='true')
         ?[target.value.trim(),...urls].filter(Boolean).join('\n'):urls[0];
       target.dispatchEvent(new Event('input',{bubbles:true}));
-      const preview=document.querySelector(input.dataset.drivePreview||'');
+      const previewSelector=input.dataset.drivePreview;
+      const preview=previewSelector?document.querySelector(previewSelector):null;
       if(preview){preview.src=urls[0];preview.classList.remove('hidden');}
       if(status)status.textContent='อัปโหลดสำเร็จ '+urls.length+' ภาพ · URL ถูกเติมให้แล้ว';
     }catch(error){
