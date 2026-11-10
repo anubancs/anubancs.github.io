@@ -44,7 +44,7 @@
       <input class="rounded-xl p-3 text-black md:col-span-2" name="cover_image_url" type="url" placeholder="URL ภาพหน้าปก (ระบบเติมให้อัตโนมัติเมื่ออัปโหลด)"><label class="md:col-span-2 text-sm">หรือเลือกภาพหน้าปกจากเครื่อง (JPG/PNG/WEBP/GIF ไม่เกิน 20 MB)<input id="news-cover-file" class="block mt-2" type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-drive-upload="news" data-drive-target="#news-form [name=cover_image_url]" data-drive-status="#news-cover-status"></label><p id="news-cover-status" class="md:col-span-2 text-sm opacity-70" role="status"></p>
       <textarea id="news-excerpt" class="rounded-xl p-3 text-black md:col-span-2" name="excerpt" placeholder="คำโปรย" maxlength="500"></textarea><div class="md:col-span-2 flex flex-wrap items-center gap-3"><button id="ai-summary-button" type="button" class="border border-wine text-wine rounded-xl px-4 py-2">✦ ให้ AI ช่วยเขียนคำโปรย</button><span id="ai-summary-status" class="text-xs opacity-70" role="status"></span></div>
       <textarea data-rich-text class="rounded-xl p-3 text-black md:col-span-2" name="content" rows="6" placeholder="เนื้อหาข่าว" required></textarea>
-      <div class="flex flex-wrap gap-3 md:col-span-2"><button id="save-news-draft" type="submit" class="brand-gradient text-white rounded-xl px-5 py-3">บันทึกฉบับร่าง</button><button id="publish-news" type="button" class="btn-gold rounded-xl px-5 py-3">บันทึกและเผยแพร่</button></div>
+      <div class="flex flex-wrap gap-3 md:col-span-2"><button id="save-news-draft" type="button" class="brand-gradient text-white rounded-xl px-5 py-3">บันทึกฉบับร่าง</button><button id="publish-news" type="button" class="btn-gold rounded-xl px-5 py-3">บันทึกและเผยแพร่</button></div>
     </form>
   </section>
   <section class="glass rounded-2xl p-6 mb-8">
@@ -79,6 +79,43 @@
   const {data:admin,error:adminError}=await db.from('admin_users').select('role').eq('user_id',user.id).maybeSingle();
   if(adminError||!admin){await db.auth.signOut();location.href='login.html';return}
   $('#whoami').textContent=user.email||'บัญชีผู้ดูแล';$('#role').textContent='สิทธิ์: '+admin.role;
+  const newsForm=$('#news-form');
+  const newsDraftButton=$('#save-news-draft');
+  const newsPublishButton=$('#publish-news');
+  async function saveNews(publish){
+    const titleInput=newsForm.elements.title,slugInput=newsForm.elements.slug;
+    if(!titleInput.checkValidity()){titleInput.reportValidity();return}
+    if(!slugInput.checkValidity()){slugInput.reportValidity();return}
+    const contentInput=newsForm.elements.content;
+    const editor=SchoolRichEditor.init(contentInput);
+    const contentHtml=editor.getHTML();
+    const contentText=editor.quill.getText().trim();
+    if(!contentText){
+      await Swal.fire('ยังไม่ได้กรอกเนื้อหาข่าว','กรุณาพิมพ์เนื้อหาข่าวในช่องแก้ไขข้อความก่อนบันทึก','warning');
+      editor.quill.focus();return;
+    }
+    const coverInput=newsForm.elements.cover_image_url;
+    if(coverInput.value.trim()&&!coverInput.checkValidity()){coverInput.reportValidity();return}
+    const f=Object.fromEntries(new FormData(newsForm).entries());
+    f.content=contentHtml;
+    const payload={...f,status:publish?'published':'draft',published_at:publish?new Date().toISOString():null,created_by:user.id,author_name:user.email};
+    const buttons=[newsDraftButton,newsPublishButton];
+    buttons.forEach(button=>{button.disabled=true;button.dataset.originalText=button.textContent;button.textContent='กำลังบันทึก...'});
+    try{
+      const {error}=await db.from('news').insert(payload);
+      if(error)throw error;
+      newsForm.reset();editor.setHTML('');
+      await Promise.all([stats(),loadNews()]);
+      await Swal.fire('บันทึกสำเร็จ',publish?'บันทึกและเผยแพร่ข่าวแล้ว':'บันทึกข่าวเป็นฉบับร่างแล้ว','success');
+    }catch(error){
+      console.error('saveNews failed:',error);
+      await Swal.fire('บันทึกไม่สำเร็จ',error.message||'เกิดข้อผิดพลาดในการบันทึกข่าว กรุณาลองใหม่','error');
+    }finally{
+      buttons.forEach(button=>{button.disabled=false;button.textContent=button.dataset.originalText||button.textContent});
+    }
+  }
+  newsDraftButton.addEventListener('click',()=>saveNews(false));
+  newsPublishButton.addEventListener('click',()=>saveNews(true));
   const {data:heroSetting}=await db.from('settings').select('value').eq('key','home_hero_image').maybeSingle();
   if(heroSetting?.value) $('#hero-image-url').value=typeof heroSetting.value==='string'?heroSetting.value:(heroSetting.value.url||'');
   $('#hero-image-save').addEventListener('click',async()=>{
@@ -138,43 +175,6 @@
     if(error){root.textContent='โหลดบุคลากรไม่สำเร็จ: '+error.message;return}
     root.innerHTML=(data||[]).map(p=>`<article class="border rounded-xl p-4 flex flex-wrap justify-between gap-3 items-center"><div><b>${esc(p.full_name)}</b><p class="text-sm opacity-60">${esc(p.position)} · ${esc(p.department||'ไม่ระบุกลุ่มงาน')} · ${p.is_published?'เผยแพร่':'ฉบับร่าง'}</p>${p.personal_website_url?'<span class="text-xs underline">มีเว็บไซต์ส่วนตัว</span>':''}</div><div class="flex flex-wrap gap-2"><button class="text-wine underline" data-edit-staff="${p.id}">แก้ไข</button><button class="text-wine underline" data-toggle-staff="${p.id}" data-published="${p.is_published}">${p.is_published?'ซ่อน':'เผยแพร่'}</button><button class="text-red-700 underline" data-delete-staff="${p.id}">ลบ</button></div></article>`).join('')||'<p class="opacity-60">ยังไม่มีข้อมูลบุคลากร</p>';
   }
-  const newsForm=$('#news-form');
-  const newsDraftButton=$('#save-news-draft');
-  const newsPublishButton=$('#publish-news');
-  async function saveNews(publish){
-    const titleInput=newsForm.elements.title,slugInput=newsForm.elements.slug;
-    if(!titleInput.checkValidity()){titleInput.reportValidity();return}
-    if(!slugInput.checkValidity()){slugInput.reportValidity();return}
-    const contentInput=newsForm.elements.content;
-    const editor=SchoolRichEditor.init(contentInput);
-    const contentHtml=editor.getHTML();
-    const contentText=editor.quill.getText().trim();
-    if(!contentText){
-      await Swal.fire('ยังไม่ได้กรอกเนื้อหาข่าว','กรุณาพิมพ์เนื้อหาข่าวในช่องแก้ไขข้อความก่อนบันทึก','warning');
-      editor.quill.focus();return;
-    }
-    const coverInput=newsForm.elements.cover_image_url;
-    if(coverInput.value.trim()&&!coverInput.checkValidity()){coverInput.reportValidity();return}
-    const f=Object.fromEntries(new FormData(newsForm).entries());
-    f.content=contentHtml;
-    const payload={...f,status:publish?'published':'draft',published_at:publish?new Date().toISOString():null,created_by:user.id,author_name:user.email};
-    const buttons=[newsDraftButton,newsPublishButton];
-    buttons.forEach(button=>{button.disabled=true;button.dataset.originalText=button.textContent;button.textContent='กำลังบันทึก...'});
-    try{
-      const {error}=await db.from('news').insert(payload);
-      if(error)throw error;
-      newsForm.reset();editor.setHTML('');
-      await Promise.all([stats(),loadNews()]);
-      await Swal.fire('บันทึกสำเร็จ',publish?'บันทึกและเผยแพร่ข่าวแล้ว':'บันทึกข่าวเป็นฉบับร่างแล้ว','success');
-    }catch(error){
-      console.error('saveNews failed:',error);
-      await Swal.fire('บันทึกไม่สำเร็จ',error.message||'เกิดข้อผิดพลาดในการบันทึกข่าว กรุณาลองใหม่','error');
-    }finally{
-      buttons.forEach(button=>{button.disabled=false;button.textContent=button.dataset.originalText||button.textContent});
-    }
-  }
-  newsForm.addEventListener('submit',event=>{event.preventDefault();saveNews(false)});
-  newsPublishButton.addEventListener('click',()=>saveNews(true));
   $('#staff-form').addEventListener('submit',async e=>{
     e.preventDefault();const f=Object.fromEntries(new FormData(e.currentTarget).entries());
     const {error}=await db.from('personnel').insert({...f,social_links:{},is_published:false});
