@@ -74,15 +74,17 @@
 (async()=>{
   const db=schoolSupabase, $=s=>document.querySelector(s);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const {data:{user},error:authError}=await db.auth.getUser();
-  if(authError||!user){location.href='login.html';return}
-  const {data:admin,error:adminError}=await db.from('admin_users').select('role').eq('user_id',user.id).maybeSingle();
-  if(adminError||!admin){await db.auth.signOut();location.href='login.html';return}
-  $('#whoami').textContent=user.email||'บัญชีผู้ดูแล';$('#role').textContent='สิทธิ์: '+admin.role;
+  // Attach news actions immediately; do not wait for the auth network round-trip.
+  const authPromise=db.auth.getUser();
   const newsForm=$('#news-form');
   const newsDraftButton=$('#save-news-draft');
   const newsPublishButton=$('#publish-news');
   async function saveNews(publish){
+    const {data:{user:saveUser},error:saveAuthError}=await authPromise;
+    if(saveAuthError||!saveUser){
+      await Swal.fire('เซสชันหมดอายุ','กรุณาเข้าสู่ระบบใหม่ แล้วลองบันทึกอีกครั้ง','warning');
+      location.href='login.html';return;
+    }
     const titleInput=newsForm.elements.title,slugInput=newsForm.elements.slug;
     if(!titleInput.checkValidity()){titleInput.reportValidity();return}
     if(!slugInput.checkValidity()){slugInput.reportValidity();return}
@@ -98,7 +100,7 @@
     if(coverInput.value.trim()&&!coverInput.checkValidity()){coverInput.reportValidity();return}
     const f=Object.fromEntries(new FormData(newsForm).entries());
     f.content=contentHtml;
-    const payload={...f,status:publish?'published':'draft',published_at:publish?new Date().toISOString():null,created_by:user.id,author_name:user.email};
+    const payload={...f,status:publish?'published':'draft',published_at:publish?new Date().toISOString():null,created_by:saveUser.id,author_name:saveUser.email};
     const buttons=[newsDraftButton,newsPublishButton];
     buttons.forEach(button=>{button.disabled=true;button.dataset.originalText=button.textContent;button.textContent='กำลังบันทึก...'});
     try{
@@ -116,6 +118,13 @@
   }
   newsDraftButton.addEventListener('click',()=>saveNews(false));
   newsPublishButton.addEventListener('click',()=>saveNews(true));
+
+  // Continue dashboard initialization only after the news buttons are already live.
+  const {data:{user},error:authError}=await authPromise;
+  if(authError||!user){location.href='login.html';return}
+  const {data:admin,error:adminError}=await db.from('admin_users').select('role').eq('user_id',user.id).maybeSingle();
+  if(adminError||!admin){await db.auth.signOut();location.href='login.html';return}
+  $('#whoami').textContent=user.email||'บัญชีผู้ดูแล';$('#role').textContent='สิทธิ์: '+admin.role;
   const {data:heroSetting}=await db.from('settings').select('value').eq('key','home_hero_image').maybeSingle();
   if(heroSetting?.value) $('#hero-image-url').value=typeof heroSetting.value==='string'?heroSetting.value:(heroSetting.value.url||'');
   $('#hero-image-save').addEventListener('click',async()=>{
