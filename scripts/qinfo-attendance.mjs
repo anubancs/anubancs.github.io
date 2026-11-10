@@ -39,6 +39,10 @@ async function login() {
   // Q-Info presents login as a modal/popup. Locate visible credential fields without
   // assuming a single framework-specific modal implementation.
   const passwordInputs = page.locator('input[type="password"]:visible');
+  if (!(await passwordInputs.first().isVisible().catch(() => false))) {
+    const opener = page.getByText(/เข้าสู่ระบบ|ลงชื่อเข้าใช้|login/i).first();
+    if (await opener.isVisible().catch(() => false)) await opener.click();
+  }
   await passwordInputs.first().waitFor({ state: 'visible', timeout: 20000 });
   const passwordInput = passwordInputs.first();
   const allVisibleInputs = page.locator('input:visible');
@@ -156,8 +160,9 @@ try {
     const target = ensure(label);
     const status = normStatus(attend[cid]);
     if (status !== 'normal') target[`${status}_${gender}`] += 1;
-    // A checked room may be represented by class/room key or a normalized label.
-    if (checkedKeys.has(label) || checkedKeys.has(String(student.Room)) || checkedKeys.some(k => label.includes(k))) target.checked = true;
+    // The presence of any attendance entry for a roster member confirms this room
+    // has attendance data. This avoids guessing Q-Info's internal room-key format.
+    target.checked = true;
   }
 
   // For checked rooms, derive normal attendance as enrollment minus all recorded
@@ -170,7 +175,7 @@ try {
   }
   const rows = [...byClass.values()].sort((a,b) => a.class_name.localeCompare(b.class_name, 'th'));
   const checkedRows = rows.filter(r => r.checked);
-  if (!checkedRows.length) throw new Error('Attendance room-check flags could not be matched to class/room records; refusing to publish');
+  if (!checkedRows.length || checkedRows.length !== rows.length) throw new Error(`Attendance is incomplete: checked ${checkedRows.length} of ${rows.length} class/room groups; refusing to publish school-wide totals`);
   const sum = key => checkedRows.reduce((n,r) => n + Number(r[key] || 0), 0);
   const students = sum('total_m') + sum('total_f');
   const present = sum('normal_m') + sum('normal_f') + sum('late_m') + sum('late_f');
