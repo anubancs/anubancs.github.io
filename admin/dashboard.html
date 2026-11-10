@@ -40,7 +40,7 @@
     <h2 class="text-xl font-bold mb-4">เพิ่มข่าวประชาสัมพันธ์</h2>
     <form id="news-form" class="grid md:grid-cols-2 gap-3" novalidate>
       <input class="rounded-xl p-3 text-black" name="title" placeholder="หัวข้อข่าว" required maxlength="250">
-      <input class="rounded-xl p-3 text-black" name="slug" placeholder="slug ภาษาอังกฤษ" required pattern="[a-z0-9-]+" maxlength="250">
+      <input class="rounded-xl p-3 text-black" name="slug" placeholder="slug ภาษาอังกฤษ" required maxlength="250">
       <input class="rounded-xl p-3 text-black md:col-span-2" name="cover_image_url" type="url" placeholder="URL ภาพหน้าปก (ระบบเติมให้อัตโนมัติเมื่ออัปโหลด)"><label class="md:col-span-2 text-sm">หรือเลือกภาพหน้าปกจากเครื่อง (JPG/PNG/WEBP/GIF ไม่เกิน 20 MB)<input id="news-cover-file" class="block mt-2" type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-drive-upload="news" data-drive-target="#news-form [name=cover_image_url]" data-drive-status="#news-cover-status"></label><p id="news-cover-status" class="md:col-span-2 text-sm opacity-70" role="status"></p>
       <textarea id="news-excerpt" class="rounded-xl p-3 text-black md:col-span-2" name="excerpt" placeholder="คำโปรย" maxlength="500"></textarea><div class="md:col-span-2 flex flex-wrap items-center gap-3"><button id="ai-summary-button" type="button" class="border border-wine text-wine rounded-xl px-4 py-2">✦ ให้ AI ช่วยเขียนคำโปรย</button><span id="ai-summary-status" class="text-xs opacity-70" role="status"></span></div>
       <textarea data-rich-text class="rounded-xl p-3 text-black md:col-span-2" name="content" rows="6" placeholder="เนื้อหาข่าว" required></textarea>
@@ -87,7 +87,7 @@
     }
     const titleInput=newsForm.elements.title,slugInput=newsForm.elements.slug;
     if(!titleInput.checkValidity()){titleInput.reportValidity();return}
-    if(!slugInput.checkValidity()){slugInput.reportValidity();return}
+    if(!/^[a-z0-9-]+$/.test(slugInput.value.trim())){slugInput.setCustomValidity('กรุณากรอก Slug ด้วยตัวอักษรภาษาอังกฤษพิมพ์เล็ก ตัวเลข หรือเครื่องหมาย - เท่านั้น');slugInput.reportValidity();slugInput.setCustomValidity('');return}
     const contentInput=newsForm.elements.content;
     const editor=SchoolRichEditor.init(contentInput);
     const contentHtml=editor.getHTML();
