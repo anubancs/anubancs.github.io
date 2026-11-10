@@ -157,20 +157,42 @@ try {
   // report URLs to its default school-conclusion page.
   await page.goto(BASE + '/pages/index.html', { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(2000);
-  const reportNav = await page.locator('a[href], [onclick]').evaluateAll(nodes =>
+  // Navigate through the exact menu hierarchy exposed by the teacher account.
+  // Direct query-string navigation can be redirected to the default dashboard.
+  const menuSteps = [
+    { label: '2. รายงาน', pattern: /2\\s*\\.?\\s*รายงาน/ },
+    { label: '2.2 สถิติการมาเรียน', pattern: /2\\s*\\.?\\s*2\\s*สถิติการมาเรียน|สถิติการมาเรียน/ },
+    { label: '2.2.1 รายวัน', pattern: /2\\s*\\.?\\s*2\\s*\\.?\\s*1\\s*รายวัน|รายวัน/ }
+  ];
+  const clickedMenu = [];
+  for (const step of menuSteps) {
+    const candidates = page.getByText(step.pattern);
+    const count = await candidates.count();
+    let clicked = false;
+    for (let i = 0; i < count; i++) {
+      const item = candidates.nth(i);
+      if (await item.isVisible().catch(() => false)) {
+        await item.click({ timeout: 8000 }).catch(async () => {
+          await item.evaluate(el => el.click());
+        });
+        clicked = true;
+        clickedMenu.push(step.label);
+        await page.waitForTimeout(700);
+        break;
+      }
+    }
+    if (!clicked) break;
+  }
+  const reportNav = await page.locator('a[href], [onclick], [role="menuitem"], li, button').evaluateAll(nodes =>
     nodes.map(node => ({
       text: (node.innerText || node.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 100),
       href: node.getAttribute('href') || '',
       onclick: node.getAttribute('onclick') || ''
-    })).filter(x => /มาเรียน|สถิติ|attendance|reportAttendStat21/i.test(x.text + ' ' + x.href + ' ' + x.onclick)).slice(0, 20)
+    })).filter(x => /รายงาน|สถิติ|มาเรียน|รายวัน|attendance|reportAttendStat21/i.test(x.text + ' ' + x.href + ' ' + x.onclick)).slice(0, 40)
   );
-  const reportAnchor = page.locator('a[href*="reportAttendStat21"]').first();
-  if (await reportAnchor.count()) {
-    await reportAnchor.click();
-  } else {
-    const reportMenu = page.getByText(/สถิติการมาเรียน|รายงานการมาเรียน|สถิติ.*มาเรียน/i).first();
-    if (await reportMenu.isVisible().catch(() => false)) await reportMenu.click();
-    else await page.goto(REPORT_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  if (clickedMenu.length !== menuSteps.length) {
+    // Keep the supplied deep link as a fallback only after trying the menu.
+    await page.goto(REPORT_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
   }
   await page.waitForLoadState('domcontentloaded').catch(() => {});
   await page.waitForTimeout(2500);
