@@ -152,14 +152,44 @@ function dateCompact(iso) { return iso.replaceAll('-', ''); }
 try {
   await login();
   await page.goto(REPORT_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.waitForTimeout(7000);
+  // The report page can render without automatically firing its year-change
+  // handler in a headless session. Trigger the same handler used by the year
+  // selector, then wait for the enrollment request rather than sleeping blindly.
+  const countResponsePromise = page.waitForResponse(
+    response => /getCountStudent/i.test(response.url()),
+    { timeout: 30000 }
+  ).catch(() => null);
+  await page.waitForTimeout(2500);
+  const reportTrigger = await page.evaluate(() => {
+    if (typeof window.yearChange === 'function') {
+      window.yearChange();
+      return 'yearChange';
+    }
+    const selector = document.querySelector('#year, select[name="year"]');
+    if (selector) {
+      selector.dispatchEvent(new Event('change', { bubbles: true }));
+      return 'year-select-change';
+    }
+    return 'no-year-control';
+  });
+  await countResponsePromise;
+  await page.waitForTimeout(2500);
   await Promise.allSettled(responseTasks);
 
   const parsed = jsonResponses.map(x => ({ url: x.url, body: unwrap(x.body) }));
   const countPayloads = parsed.filter(x => /getCountStudent/i.test(x.url));
   const attendanceDocs = parsed.flatMap(x => walk(x.body, o => o && typeof o === 'object' && o.attend && typeof o.attend === 'object' && o.classRoomEdu));
   const rosterArrays = parsed.flatMap(x => pickRows(x.body)).filter(a => a.some(x => x && x.CID && x.EducationClassDescription !== undefined));
-  if (!countPayloads.length) throw new Error('Could not observe getCountStudent response; report page may not have loaded the selected academic year');
+  if (!countPayloads.length) {
+    const reportState = await page.evaluate(() => ({
+      title: document.title,
+      url: location.pathname + location.search,
+      yearChangeAvailable: typeof window.yearChange === 'function',
+      yearValue: document.querySelector('#year, select[name="year"]')?.value || null
+    }));
+    throw new Error('Could not observe getCountStudent response after triggering ' + reportTrigger +
+      '; reportState=' + JSON.stringify(reportState));
+  }
   if (!attendanceDocs.length) throw new Error('Could not observe morning_attendance JSON; verify report page/date and authorized access');
   if (!rosterArrays.length) throw new Error('Could not observe student roster response needed to map attendance IDs to classes');
 
