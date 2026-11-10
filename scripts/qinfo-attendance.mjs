@@ -65,12 +65,45 @@ async function login() {
   await usernameInput.fill(USERNAME);
   await passwordInput.fill(PASSWORD);
 
+  // The Q-Info popup may render its action as a styled div/link rather than
+  // a native <button>. Try semantic and visible form controls, then submit by
+  // pressing Enter in the password field (standard HTML form behavior).
   const candidates = page.getByRole('button', { name: /เข้าสู่ระบบ|ลงชื่อเข้าใช้|login|sign in/i });
-  if (await candidates.count()) await candidates.first().click();
-  else {
-    const submit = page.locator('button[type="submit"]:visible, input[type="submit"]:visible');
-    if (!(await submit.count())) throw new Error('Could not identify the login submit button');
-    await submit.first().click();
+  const candidateCount = await candidates.count();
+  let submitted = false;
+  for (let i = 0; i < candidateCount; i++) {
+    if (await candidates.nth(i).isVisible().catch(() => false)) {
+      await candidates.nth(i).click();
+      submitted = true;
+      break;
+    }
+  }
+  if (!submitted) {
+    const form = passwordInput.locator('xpath=ancestor::form[1]');
+    const formActions = form.locator('button:visible, input[type="submit"]:visible, [role="button"]:visible, a:visible');
+    const actionCount = await formActions.count();
+    for (let i = 0; i < actionCount; i++) {
+      const action = formActions.nth(i);
+      const label = [
+        await action.innerText().catch(() => ''),
+        await action.getAttribute('aria-label').catch(() => ''),
+        await action.getAttribute('title').catch(() => ''),
+        await action.getAttribute('value').catch(() => '')
+      ].join(' ');
+      if (/เข้าสู่ระบบ|ลงชื่อเข้าใช้|login|sign.?in|ยืนยัน/i.test(label)) {
+        await action.click();
+        submitted = true;
+        break;
+      }
+    }
+  }
+  if (!submitted) {
+    try {
+      await passwordInput.press('Enter');
+      submitted = true;
+    } catch {
+      throw new Error('Could not submit the Q-Info login form using a visible action or Enter key');
+    }
   }
 
   await page.waitForTimeout(3500);
