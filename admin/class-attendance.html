@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>บันทึกสถิติการมาเรียนรายห้อง | โรงเรียนอนุบาลชุมแสง</title>
+<script src="https://cdn.tailwindcss.com"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="../assets/css/style.css?v=attendance-teacher1">
+</head>
+<body class="bg-slate-50 min-h-screen">
+<header class="brand-gradient text-white p-4 md:p-5"><div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-3"><div><b>ระบบสถิติการมาเรียน</b><p class="text-sm opacity-80">สำหรับครูประจำชั้น</p></div><nav class="flex flex-wrap gap-4 text-sm"><a href="dashboard.html">Dashboard</a><a href="../attendance.html">รายงานสาธารณะ</a><button id="logout" type="button">ออกจากระบบ</button></nav></div></header>
+<main class="max-w-6xl mx-auto p-4 md:p-8">
+ <div class="mb-6"><p class="text-wine font-semibold">CLASSROOM ATTENDANCE</p><h1 class="text-3xl font-bold">บันทึกสถิติการมาเรียนรายห้อง</h1><p id="identity" class="text-slate-600 mt-2">กำลังตรวจสอบบัญชี...</p></div>
+ <section id="owner-panel" class="hidden bg-white rounded-2xl shadow p-5 mb-6">
+  <h2 class="text-xl font-bold mb-2">กำหนดครูประจำชั้น</h2><p class="text-sm text-slate-600 mb-4">เลือกบัญชีครูที่มีอยู่แล้วและกำหนดห้องเรียน ครูจะเห็นและแก้ไขได้เฉพาะห้องที่ได้รับมอบหมาย</p>
+  <form id="assignment-form" class="grid md:grid-cols-[1fr_1fr_auto] gap-3">
+   <label class="text-sm">บัญชีครู<select id="teacher-select" required class="block w-full border rounded-xl p-3 mt-1 text-slate-900"><option value="">กำลังโหลดบัญชี...</option></select></label>
+   <label class="text-sm">ห้องเรียน<select id="class-select" required class="block w-full border rounded-xl p-3 mt-1 text-slate-900"></select></label>
+   <button class="brand-gradient text-white rounded-xl px-5 py-3 self-end" type="submit">กำหนดครูประจำชั้น</button>
+  </form>
+  <p id="assignment-status" class="text-sm mt-3" role="status"></p>
+  <div class="overflow-x-auto mt-4"><table class="w-full text-sm min-w-[600px]"><thead class="bg-slate-100"><tr><th class="text-left p-3">ห้องเรียน</th><th class="text-left p-3">ครูผู้รับผิดชอบ</th><th class="text-left p-3">บัญชี</th><th class="p-3">จัดการ</th></tr></thead><tbody id="assignment-list"><tr><td colspan="4" class="p-3">กำลังโหลด...</td></tr></tbody></table></div>
+ </section>
+ <section class="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-3 gap-4">
+  <label>ปีการศึกษา<input id="year" type="number" min="2500" max="2700" value="2569" class="block border rounded-lg p-2 w-full mt-1"></label>
+  <label>วันที่บันทึก<input id="date" type="date" class="block border rounded-lg p-2 w-full mt-1"></label>
+  <div class="flex items-end"><button id="load" type="button" class="border border-slate-300 rounded-xl px-5 py-2 w-full">โหลดข้อมูลวันที่เลือก</button></div>
+ </section>
+ <div id="class-entry-list" class="space-y-5"><div class="bg-white rounded-2xl p-6 text-slate-500">กำลังโหลดห้องเรียนที่ได้รับมอบหมาย...</div></div>
+ <p id="status" role="status" class="mt-5 text-sm text-slate-600"></p>
+</main>
+<script src="../assets/js/supabase.js"></script>
+<script>
+(async()=>{
+ const db=schoolSupabase,$=s=>document.querySelector(s);
+ const classes=['ป.2/1','ป.2/2','ป.3/1','ป.3/2','ป.4/1','ป.4/2','ป.5/1','ป.5/2','ป.6/1','ป.6/2'];
+ const fields=[['total_m','นักเรียนชาย'],['total_f','นักเรียนหญิง'],['normal_m','มาปกติ ช'],['normal_f','มาปกติ ญ'],['late_m','มาสาย ช'],['late_f','มาสาย ญ'],['absent_m','ขาด ช'],['absent_f','ขาด ญ'],['sick_m','ป่วย ช'],['sick_f','ป่วย ญ'],['leave_m','ลากิจ ช'],['leave_f','ลากิจ ญ']];
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const {data:{user},error:authError}=await db.auth.getUser();
+ if(authError||!user){location.href='login.html';return}
+ const {data:membership,error:memberError}=await db.from('admin_users').select('role').eq('user_id',user.id).maybeSingle();
+ if(memberError||!membership){await db.auth.signOut();location.href='login.html';return}
+ const isOwner=membership.role==='owner';
+ $('#identity').textContent=(user.email||'บัญชีผู้ใช้')+(isOwner?' · ผู้ดูแลสูงสุด':' · ครูผู้ใช้งาน');
+ $('#logout').onclick=async()=>{await db.auth.signOut();location.href='login.html'};
+ $('#date').value=new Date().toLocaleDateString('en-CA');
+ $('#class-select').innerHTML=classes.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+ let authUsers=[];
+ async function loadAssignments(){
+  const {data,error}=await db.from('attendance_class_assignments').select('id,academic_year,class_name,user_id,created_at').eq('academic_year',Number($('#year').value)).order('class_name');
+  if(error)throw error;
+  const rows=data||[];
+  if(isOwner){
+   const byId=new Map(authUsers.map(u=>[u.user_id,u]));
+   $('#assignment-list').innerHTML=rows.map(a=>{const u=byId.get(a.user_id)||{};return '<tr class="border-t"><td class="p-3 font-semibold">'+esc(a.class_name)+'</td><td class="p-3">'+esc(u.full_name||u.email||'บัญชีผู้ใช้')+'</td><td class="p-3">'+esc(u.email||'')+'</td><td class="p-3 text-center"><button type="button" class="text-red-700 underline" data-unassign="'+a.id+'">ยกเลิก</button></td></tr>'}).join('')||'<tr><td colspan="4" class="p-3 text-slate-500">ยังไม่ได้กำหนดครูประจำชั้น</td></tr>';
+  }
+  return rows;
+ }
+ if(isOwner){
+  $('#owner-panel').classList.remove('hidden');
+  try{
+   const {data,error}=await db.rpc('list_auth_users_for_owner');
+   if(error)throw error;
+   authUsers=data||[];
+   $('#teacher-select').innerHTML='<option value="">เลือกบัญชีครู</option>'+authUsers.map(u=>'<option value="'+u.user_id+'">'+esc(u.full_name||u.email)+' · '+esc(u.email)+'</option>').join('');
+  }catch(e){$('#assignment-status').textContent='โหลดบัญชีผู้ใช้ไม่สำเร็จ: '+e.message}
+  $('#assignment-form').addEventListener('submit',async e=>{
+   e.preventDefault();const userId=$('#teacher-select').value,className=$('#class-select').value;
+   if(!userId||!className)return;
+   const {error}=await db.from('attendance_class_assignments').upsert({academic_year:Number($('#year').value),class_name:className,user_id:userId,assigned_by:user.id},{onConflict:'academic_year,class_name'});
+   if(error){$('#assignment-status').textContent='กำหนดไม่สำเร็จ: '+error.message;return}
+   $('#assignment-status').textContent='กำหนดครูประจำชั้นเรียบร้อยแล้ว';
+   await renderEntries();
+  });
+  $('#assignment-list').addEventListener('click',async e=>{
+   const b=e.target.closest('[data-unassign]');if(!b)return;
+   if(!confirm('ยืนยันยกเลิกการกำหนดครูประจำชั้นของห้องนี้?'))return;
+   const {error}=await db.from('attendance_class_assignments').delete().eq('id',b.dataset.unassign);
+   if(error){$('#assignment-status').textContent='ยกเลิกไม่สำเร็จ: '+error.message;return}
+   await renderEntries();
+  });
+ }
+ async function renderEntries(){
+  const root=$('#class-entry-list');root.innerHTML='<div class="bg-white rounded-2xl p-6">กำลังโหลดข้อมูล...</div>';
+  const assignments=await loadAssignments();
+  if(!assignments.length){root.innerHTML='<div class="bg-white rounded-2xl p-6 text-amber-700">ยังไม่มีห้องเรียนที่กำหนดให้บัญชีนี้ '+(isOwner?'โปรดกำหนดครูประจำชั้นด้านบน':'กรุณาติดต่อผู้ดูแลระบบเพื่อกำหนดห้องเรียนให้ท่าน')+'</div>';return}
+  const {data:entries,error}=await db.from('attendance_class_entries').select('*').eq('academic_year',Number($('#year').value)).eq('report_date',$('#date').value).in('class_name',assignments.map(a=>a.class_name));
+  if(error){root.innerHTML='<div class="bg-white rounded-2xl p-6 text-red-700">โหลดข้อมูลไม่สำเร็จ: '+esc(error.message)+'</div>';return}
+  const entryMap=new Map((entries||[]).map(e=>[e.class_name,e]));
+  root.innerHTML=assignments.map(a=>{
+   const e=entryMap.get(a.class_name),counts=e?.counts||{};
+   return '<section class="bg-white rounded-2xl shadow p-5" data-class-card="'+esc(a.class_name)+'"><div class="flex flex-wrap justify-between items-center gap-2 mb-4"><div><h2 class="text-xl font-bold">'+esc(a.class_name)+'</h2><p class="text-xs text-slate-500">'+(e?'บันทึกแล้ว · '+new Date(e.updated_at).toLocaleString('th-TH'):'ยังไม่ได้บันทึกวันนี้')+'</p></div><span class="text-xs rounded-full px-3 py-1 '+(e?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800')+'">'+(e?'มีข้อมูลแล้ว':'รอกรอกข้อมูล')+'</span></div><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">'+fields.map(([k,label])=>'<label class="text-sm">'+label+'<input data-field="'+k+'" type="number" min="0" max="500" step="1" inputmode="numeric" value="'+(Number(counts[k])||0)+'" class="block w-full border rounded-lg p-2 mt-1 text-right"></label>').join('')+'</div><label class="block text-sm mt-4">หมายเหตุ (ไม่บังคับ)<input data-note type="text" maxlength="500" value="'+esc(e?.note||'')+'" class="block w-full border rounded-lg p-2 mt-1"></label><div class="flex flex-wrap justify-between items-center gap-3 mt-4"><p class="text-xs text-slate-500">ตรวจสอบให้ยอดมาเรียน + ขาด + ป่วย + ลากิจ เท่ากับจำนวนนักเรียน</p><button type="button" data-save-class="'+esc(a.class_name)+'" class="brand-gradient text-white rounded-xl px-5 py-2">บันทึก '+esc(a.class_name)+'</button></div></section>';
+  }).join('');
+  root.querySelectorAll('[data-save-class]').forEach(btn=>btn.addEventListener('click',()=>saveClass(btn.dataset.saveClass)));
+  if(isOwner)$('#assignment-list').dispatchEvent(new Event('refresh'));
+ }
+ async function saveClass(className){
+  const card=document.querySelector('[data-class-card="'+CSS.escape(className)+'"]'),button=card.querySelector('[data-save-class]');
+  const counts={};card.querySelectorAll('[data-field]').forEach(input=>{counts[input.dataset.field]=Number(input.value)});
+  for(const [k,v] of Object.entries(counts)){if(!Number.isInteger(v)||v<0||v>500){$('#status').textContent='กรุณาตรวจสอบจำนวนในช่อง '+k+' ของ '+className;return}}
+  const total=counts.total_m+counts.total_f;
+  const present=counts.normal_m+counts.normal_f+counts.late_m+counts.late_f;
+  const notPresent=counts.absent_m+counts.absent_f+counts.sick_m+counts.sick_f+counts.leave_m+counts.leave_f;
+  if(present+notPresent!==total){$('#status').textContent='ห้อง '+className+': ยอดมาเรียนและไม่มาเรียนรวมกันต้องเท่าจำนวนนักเรียน ('+total+')';return}
+  button.disabled=true;button.textContent='กำลังบันทึก...';
+  const payload={academic_year:Number($('#year').value),report_date:$('#date').value,class_name:className,counts,note:card.querySelector('[data-note]').value,submitted_by:user.id,updated_at:new Date().toISOString()};
+  const {error}=await db.from('attendance_class_entries').upsert(payload,{onConflict:'academic_year,report_date,class_name'});
+  button.disabled=false;button.textContent='บันทึก '+className;
+  if(error){$('#status').textContent='บันทึก '+className+' ไม่สำเร็จ: '+error.message;return}
+  $('#status').textContent='บันทึกสถิติ '+className+' เรียบร้อยแล้ว';
+  await renderEntries();
+ }
+ $('#load').onclick=renderEntries;
+ $('#year').addEventListener('change',renderEntries);
+ await renderEntries();
+})();
+</script>
+</body></html>
