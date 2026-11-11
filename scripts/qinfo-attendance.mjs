@@ -160,9 +160,9 @@ try {
   // Navigate through the exact menu hierarchy exposed by the teacher account.
   // Direct query-string navigation can be redirected to the default dashboard.
   const menuSteps = [
-    { label: '2. รายงาน', pattern: /2\s*\\.?\s*รายงาน/ },
-    { label: '2.2 สถิติการมาเรียน', pattern: /2\s*\\.?\s*2\s*สถิติการมาเรียน|สถิติการมาเรียน/ },
-    { label: '2.2.1 รายวัน', pattern: /2\s*\\.?\s*2\s*\\.?\s*1\s*รายวัน|รายวัน/ }
+    { label: '2. รายงาน', pattern: /2\s*\.?\s*รายงาน/ },
+    { label: '2.2 สถิติการมาเรียน', pattern: /2\s*\.?\s*2\s*สถิติการมาเรียน|สถิติการมาเรียน/ },
+    { label: '2.2.1 รายวัน', pattern: /2\s*\.?\s*2\s*\.?\s*1\s*รายวัน|รายวัน/ }
   ];
   const clickedMenu = [];
   for (const step of menuSteps) {
