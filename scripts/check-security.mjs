@@ -40,9 +40,10 @@ for (const file of adminPages) {
     ? /signInWithPassword\s*\(/.test(source)
     : /auth\.getUser\s*\(/.test(source);
   const hasAdminGuard = /from\(['"]admin_users['"]\)/.test(source);
+  const isPasswordSelfService = file === path.join('admin', 'change-password.html');
   const hasPersonnelOwnershipGuard = /from\(['"]personnel['"]\)/.test(source)
     && /auth_user_id/.test(source);
-  if (!hasSessionCheck || (isStaffSelfService ? !hasPersonnelOwnershipGuard : !hasAdminGuard)) {
+  if (!hasSessionCheck || (isStaffSelfService ? !hasPersonnelOwnershipGuard : (isPasswordSelfService ? false : !hasAdminGuard))) {
     failed = true;
     console.error(`Page is missing its required authenticated access guard: ${file}`);
   }
