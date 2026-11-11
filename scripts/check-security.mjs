@@ -35,7 +35,7 @@ for (const file of files.filter(file => file !== path.join('scripts', 'check-sec
 const adminPages = files.filter(file => file.startsWith(`admin${path.sep}`) && file.endsWith('.html'));
 for (const file of adminPages) {
   const source = fs.readFileSync(file, 'utf8');
-  const isStaffSelfService = file === path.join('admin', 'personnel-profile.html');
+  const isStaffSelfService = [path.join('admin', 'personnel-profile.html'), path.join('admin', 'staff-portal.html')].includes(file);
   const hasSessionCheck = file === path.join('admin', 'login.html')
     ? /signInWithPassword\s*\(/.test(source)
     : /auth\.getUser\s*\(/.test(source);
