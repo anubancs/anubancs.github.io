@@ -35,7 +35,7 @@
   run.addEventListener('click', async () => {
     const files = [...input.files];
     if (!files.length) { progress.textContent = 'กรุณาเลือกภาพรายงานก่อน'; return; }
-    if (files.some(file => !/^image\\/(png|jpeg|webp)$/.test(file.type))) {
+    if (files.some(file => !/^image\/(png|jpeg|webp)$/.test(file.type))) {
       progress.textContent = 'รองรับเฉพาะ PNG, JPG และ WEBP'; return;
     }
     run.disabled = true;
@@ -57,9 +57,9 @@
       for (let i = 0; i < files.length; i++) {
         progress.textContent = 'กำลังอ่านภาพ ' + (i + 1) + '/' + files.length + ': ' + files[i].name;
         const result = await worker.recognize(files[i]);
-        outputs.push('--- ' + files[i].name + ' ---\\n' + (result.data.text || ''));
+        outputs.push('--- ' + files[i].name + ' ---\n' + (result.data.text || ''));
       }
-      textArea.value = outputs.join('\\n\\n');
+      textArea.value = outputs.join('\n\n');
       progress.textContent = 'อ่านภาพเสร็จ ' + files.length + ' ไฟล์ · ตรวจข้อความก่อนนำเข้า';
       applyStatus.textContent = 'OCR ทำงานในเบราว์เซอร์ ภาพต้นฉบับไม่ได้ถูกส่งหรือบันทึกลงระบบ';
       apply.disabled = false;
@@ -73,7 +73,7 @@
 
   apply.addEventListener('click', () => {
     const rows = [...document.querySelectorAll('#rows tr')];
-    const lines = thaiDigits(textArea.value).split(/\\r?\\n/).map(line => line.trim()).filter(Boolean);
+    const lines = thaiDigits(textArea.value).split(/\r?\n/).map(line => line.trim()).filter(Boolean);
     let applied = 0;
     const missed = [];
     for (const row of rows) {
@@ -83,7 +83,7 @@
       const source = lines.find(line => matcher.test(line));
       if (!source) { missed.push(className); continue; }
       const afterClass = source.replace(matcher, ' ');
-      const values = [...afterClass.matchAll(/\\d[\\d,]*/g)].map(match => Number(match[0].replace(/,/g, '')));
+      const values = [...afterClass.matchAll(/\d[\d,]*/g)].map(match => Number(match[0].replace(/,/g, '')));
       if (values.length < 12 || values.some(value => !Number.isSafeInteger(value) || value < 0)) {
         missed.push(className);
         continue;
