@@ -38,8 +38,9 @@
  const {data:{user},error:authError}=await db.auth.getUser();
  if(authError||!user){location.href='login.html';return}
  const {data:membership,error:memberError}=await db.from('admin_users').select('role').eq('user_id',user.id).maybeSingle();
- if(memberError||!membership){await db.auth.signOut();location.href='login.html';return}
- const isOwner=membership.role==='owner';
+ if(memberError){$('#identity').textContent='ตรวจสอบสิทธิ์ไม่สำเร็จ: '+memberError.message;return}
+ // A valid classroom assignment is sufficient for teachers; they do not need CMS admin membership.
+ const isOwner=membership?.role==='owner';
  $('#identity').textContent=(user.email||'บัญชีผู้ใช้')+(isOwner?' · ผู้ดูแลสูงสุด':' · ครูผู้ใช้งาน');
  $('#logout').onclick=async()=>{await db.auth.signOut();location.href='login.html'};
  $('#date').value=new Date().toLocaleDateString('en-CA');
