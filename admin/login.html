@@ -77,6 +77,18 @@
         .from('personnel').select('id').eq('auth_user_id', data.user.id).maybeSingle();
       if (personnelError) throw personnelError;
       if (personnel) {
+        // Homeroom teachers should land directly on their assigned attendance form.
+        const { data: classroomAssignments, error: assignmentError } = await db
+          .from('attendance_class_assignments')
+          .select('class_name')
+          .eq('academic_year', 2569)
+          .eq('user_id', data.user.id)
+          .limit(1);
+        if (assignmentError) throw assignmentError;
+        if (classroomAssignments && classroomAssignments.length > 0) {
+          location.replace('class-attendance.html');
+          return;
+        }
         location.replace('personnel-profile.html');
         return;
       }
