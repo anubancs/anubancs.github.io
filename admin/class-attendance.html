@@ -19,7 +19,7 @@
   </form>
   <p id="assignment-status" class="text-sm mt-3" role="status"></p>
   <div class="overflow-x-auto mt-4"><table class="w-full text-sm min-w-[600px]"><thead class="bg-slate-100"><tr><th class="text-left p-3">ห้องเรียน</th><th class="text-left p-3">ครูผู้รับผิดชอบ</th><th class="text-left p-3">บัญชี</th><th class="p-3">จัดการ</th></tr></thead><tbody id="assignment-list"><tr><td colspan="4" class="p-3">กำลังโหลด...</td></tr></tbody></table></div>
-  <div class="border-t mt-5 pt-4 flex flex-wrap items-center justify-between gap-3"><div><b>สรุปและเผยแพร่สถิติประจำวัน</b><p class="text-sm text-slate-500">เผยแพร่ได้เมื่อกำหนดครูครบทุกห้องและครูบันทึกข้อมูลครบทั้ง 10 ห้องในวันที่เลือก</p></div><button id="publish-day" type="button" class="bg-emerald-700 text-white rounded-xl px-5 py-3">ตรวจสอบและเผยแพร่สถิติวันนี้</button></div>
+  <div class="border-t mt-5 pt-4 flex flex-wrap items-center justify-between gap-3"><div><b>สรุปและเผยแพร่สถิติประจำวัน</b><p class="text-sm text-slate-500">เผยแพร่ได้เมื่อกำหนดครูครบทุกห้องและครูบันทึกข้อมูลครบทั้ง 17 ห้องในวันที่เลือก</p></div><button id="publish-day" type="button" class="bg-emerald-700 text-white rounded-xl px-5 py-3">ตรวจสอบและเผยแพร่สถิติวันนี้</button></div>
  </section>
  <section class="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-3 gap-4">
   <label>ปีการศึกษา<input id="year" type="number" min="2500" max="2700" value="2569" class="block border rounded-lg p-2 w-full mt-1"></label>
@@ -33,7 +33,7 @@
 <script>
 (async()=>{
  const db=schoolSupabase,$=s=>document.querySelector(s);
- const classes=['ป.2/1','ป.2/2','ป.3/1','ป.3/2','ป.4/1','ป.4/2','ป.5/1','ป.5/2','ป.6/1','ป.6/2'];
+ const classes=['อนุบาล 1/1','อนุบาล 2/1','อนุบาล 2/2','อนุบาล 3/1','อนุบาล 3/2','ป.1/1','ป.1/2','ป.2/1','ป.2/2','ป.3/1','ป.3/2','ป.4/1','ป.4/2','ป.5/1','ป.5/2','ป.6/1','ป.6/2'];
  const fields=[['total_m','นักเรียนชาย'],['total_f','นักเรียนหญิง'],['normal_m','มาปกติ ช'],['normal_f','มาปกติ ญ'],['late_m','มาสาย ช'],['late_f','มาสาย ญ'],['absent_m','ขาด ช'],['absent_f','ขาด ญ'],['sick_m','ป่วย ช'],['sick_f','ป่วย ญ'],['leave_m','ลากิจ ช'],['leave_f','ลากิจ ญ']];
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const {data:{user},error:authError}=await db.auth.getUser();
@@ -46,13 +46,13 @@
  $('#logout').onclick=async()=>{await db.auth.signOut();location.href='login.html'};
  $('#date').value=new Date().toLocaleDateString('en-CA');
  $('#class-select').innerHTML=classes.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
- let authUsers=[];
+ let authUsers=[],teacherAccounts=[];
  async function loadAssignments(){
   const {data,error}=await db.from('attendance_class_assignments').select('id,academic_year,class_name,user_id,created_at').eq('academic_year',Number($('#year').value)).order('class_name');
   if(error)throw error;
   const rows=data||[];
   if(isOwner){
-   const byId=new Map(authUsers.map(u=>[u.user_id,u]));
+   const byId=new Map(teacherAccounts.concat(authUsers.map(u=>({user_id:u.user_id,full_name:u.full_name,email:u.email}))).map(u=>[u.user_id,u]));
    $('#assignment-list').innerHTML=rows.map(a=>{const u=byId.get(a.user_id)||{};return '<tr class="border-t"><td class="p-3 font-semibold">'+esc(a.class_name)+'</td><td class="p-3">'+esc(u.full_name||u.email||'บัญชีผู้ใช้')+'</td><td class="p-3">'+esc(u.email||'')+'</td><td class="p-3 text-center"><button type="button" class="text-red-700 underline" data-unassign="'+a.id+'">ยกเลิก</button></td></tr>'}).join('')||'<tr><td colspan="4" class="p-3 text-slate-500">ยังไม่ได้กำหนดครูประจำชั้น</td></tr>';
   }
   return rows;
@@ -63,7 +63,12 @@
    const {data,error}=await db.rpc('list_auth_users_for_owner');
    if(error)throw error;
    authUsers=data||[];
-   $('#teacher-select').innerHTML='<option value="">เลือกบัญชีครู</option>'+authUsers.map(u=>'<option value="'+u.user_id+'">'+esc(u.full_name||u.email)+' · '+esc(u.email)+'</option>').join('');
+   const {data:staff,error:staffError}=await db.from('personnel').select('auth_user_id,full_name,position').not('auth_user_id','is',null).order('full_name');
+   if(staffError)throw staffError;
+   const accountMap=new Map(authUsers.map(u=>[u.user_id,u]));
+   teacherAccounts=(staff||[]).filter(p=>p.auth_user_id&&String(p.position||'').includes('ครู')&&!String(p.position||'').includes('ผู้อำนวยการ')).map(p=>({user_id:p.auth_user_id,full_name:p.full_name,position:p.position,email:accountMap.get(p.auth_user_id)?.email||''})).filter(u=>accountMap.has(u.user_id));
+   $('#teacher-select').innerHTML='<option value="">เลือกบัญชีครู</option>'+teacherAccounts.map(u=>'<option value="'+u.user_id+'">'+esc(u.full_name)+' · '+esc(u.email)+'</option>').join('');
+   if(!teacherAccounts.length)$('#assignment-status').textContent='ไม่พบบัญชีครูที่เชื่อมกับข้อมูลบุคลากร กรุณาตรวจสอบการเชื่อมบัญชีในหน้าจัดการบุคลากร';
   }catch(e){$('#assignment-status').textContent='โหลดบัญชีผู้ใช้ไม่สำเร็จ: '+e.message}
   $('#assignment-form').addEventListener('submit',async e=>{
    e.preventDefault();const userId=$('#teacher-select').value,className=$('#class-select').value;
