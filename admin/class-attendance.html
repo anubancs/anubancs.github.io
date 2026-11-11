@@ -19,6 +19,7 @@
   </form>
   <p id="assignment-status" class="text-sm mt-3" role="status"></p>
   <div class="overflow-x-auto mt-4"><table class="w-full text-sm min-w-[600px]"><thead class="bg-slate-100"><tr><th class="text-left p-3">ห้องเรียน</th><th class="text-left p-3">ครูผู้รับผิดชอบ</th><th class="text-left p-3">บัญชี</th><th class="p-3">จัดการ</th></tr></thead><tbody id="assignment-list"><tr><td colspan="4" class="p-3">กำลังโหลด...</td></tr></tbody></table></div>
+  <div class="border-t mt-5 pt-4 flex flex-wrap items-center justify-between gap-3"><div><b>สรุปและเผยแพร่สถิติประจำวัน</b><p class="text-sm text-slate-500">เผยแพร่ได้เมื่อกำหนดครูครบทุกห้องและครูบันทึกข้อมูลครบทั้ง 10 ห้องในวันที่เลือก</p></div><button id="publish-day" type="button" class="bg-emerald-700 text-white rounded-xl px-5 py-3">ตรวจสอบและเผยแพร่สถิติวันนี้</button></div>
  </section>
  <section class="bg-white rounded-2xl shadow p-5 mb-6 grid md:grid-cols-3 gap-4">
   <label>ปีการศึกษา<input id="year" type="number" min="2500" max="2700" value="2569" class="block border rounded-lg p-2 w-full mt-1"></label>
@@ -109,6 +110,29 @@
   if(error){$('#status').textContent='บันทึก '+className+' ไม่สำเร็จ: '+error.message;return}
   $('#status').textContent='บันทึกสถิติ '+className+' เรียบร้อยแล้ว';
   await renderEntries();
+ }
+ if(isOwner){
+  $('#publish-day').addEventListener('click',async()=>{
+   const button=$('#publish-day');button.disabled=true;button.textContent='กำลังตรวจสอบ...';
+   try{
+    const assignments=await loadAssignments();
+    const assigned=new Set(assignments.map(a=>a.class_name));
+    const unassigned=classes.filter(name=>!assigned.has(name));
+    if(unassigned.length){throw new Error('ยังไม่ได้กำหนดครูประจำชั้น: '+unassigned.join(', '))}
+    const {data:entries,error:entryError}=await db.from('attendance_class_entries').select('class_name').eq('academic_year',Number($('#year').value)).eq('report_date',$('#date').value);
+    if(entryError)throw entryError;
+    const submitted=new Set((entries||[]).map(e=>e.class_name));
+    const missing=classes.filter(name=>!submitted.has(name));
+    if(missing.length)throw new Error('ยังไม่ได้บันทึกข้อมูล: '+missing.join(', '));
+    const {data,error}=await db.rpc('publish_classroom_attendance_day',{
+     p_academic_year:Number($('#year').value),p_report_date:$('#date').value,p_is_published:true,p_note:'สรุปจากข้อมูลที่ครูประจำชั้นบันทึก'
+    });
+    if(error)throw error;
+    $('#status').textContent='เผยแพร่สถิติประจำวันที่ '+$('#date').value+' เรียบร้อยแล้ว รวม '+(data?.class_count||classes.length)+' ห้องเรียน';
+    await Swal.fire('เผยแพร่สำเร็จ','สถิติการมาเรียนรายวันถูกส่งไปยังหน้ารายงานสาธารณะแล้ว','success');
+   }catch(error){$('#status').textContent=error.message;await Swal.fire('ยังเผยแพร่ไม่ได้',error.message,'warning')}
+   finally{button.disabled=false;button.textContent='ตรวจสอบและเผยแพร่สถิติวันนี้'}
+  });
  }
  $('#load').onclick=renderEntries;
  $('#year').addEventListener('change',renderEntries);
