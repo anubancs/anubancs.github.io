@@ -166,36 +166,46 @@ try {
   ];
   const clickedMenu = [];
   for (const step of menuSteps) {
-    const candidates = page.getByText(step.pattern);
-    const count = await candidates.count();
     let clicked = false;
-    for (let i = 0; i < count; i++) {
-      const item = candidates.nth(i);
-      if (await item.isVisible().catch(() => false)) {
-        await item.click({ timeout: 8000 }).catch(async () => {
-          await item.evaluate(el => el.click());
-        });
-        clicked = true;
-        clickedMenu.push(step.label);
-        await page.waitForTimeout(700);
-        break;
+    // Teacher menus may be rendered inside an iframe.
+    for (const context of page.frames()) {
+      const candidates = context.getByText(step.pattern);
+      const count = await candidates.count().catch(() => 0);
+      for (let i = 0; i < count; i++) {
+        const item = candidates.nth(i);
+        if (await item.isVisible().catch(() => false)) {
+          await item.click({ timeout: 8000 }).catch(async () => {
+            await item.evaluate(el => el.click()).catch(() => {});
+          });
+          clicked = true;
+          clickedMenu.push(step.label + (context === page.mainFrame() ? '' : ' [iframe]'));
+          await page.waitForTimeout(900);
+          break;
+        }
       }
+      if (clicked) break;
     }
     if (!clicked) break;
   }
-  const reportNav = await page.locator('a[href], [onclick], [role="menuitem"], li, button').evaluateAll(nodes =>
-    nodes.map(node => ({
-      text: (node.innerText || node.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 100),
-      href: node.getAttribute('href') || '',
-      onclick: node.getAttribute('onclick') || ''
-    })).filter(x => /รายงาน|สถิติ|มาเรียน|รายวัน|attendance|reportAttendStat21/i.test(x.text + ' ' + x.href + ' ' + x.onclick)).slice(0, 40)
-  );
+  const reportNav = [];
+  for (const context of page.frames()) {
+    const items = await context.locator('a[href], [onclick], [role="menuitem"], li, button').evaluateAll(nodes =>
+      nodes.map(node => ({
+        text: (node.innerText || node.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 100),
+        href: node.getAttribute('href') || '',
+        onclick: node.getAttribute('onclick') || ''
+      })).filter(x => /รายงาน|สถิติ|มาเรียน|รายวัน|attendance|reportAttendStat21/i.test(x.text + ' ' + x.href + ' ' + x.onclick)).slice(0, 40)
+    ).catch(() => []);
+    if (items.length) reportNav.push({ frame: context.url().slice(0, 180), items });
+  }
   if (clickedMenu.length !== menuSteps.length) {
-    // Keep the supplied deep link as a fallback only after trying the menu.
-    await page.goto(REPORT_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    // Client-side redirects can abort goto; inspect the settled page afterward.
+    await page.goto(REPORT_URL, { waitUntil: 'domcontentloaded', timeout: 60000 }).catch(error => {
+      if (!/ERR_ABORTED|Navigation interrupted/i.test(String(error))) throw error;
+    });
   }
   await page.waitForLoadState('domcontentloaded').catch(() => {});
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(3000);
 
   // The report page can render without automatically firing its year-change
   // handler in a headless session. Trigger the same handler used by the year
