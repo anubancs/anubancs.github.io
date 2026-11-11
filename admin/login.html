@@ -11,7 +11,7 @@
 <body class="min-h-screen grid place-items-center p-5">
 <section id="login-panel" class="glass rounded-3xl p-8 w-full max-w-md">
 <h1 class="text-2xl font-bold">ระบบผู้ดูแลและบุคลากร</h1>
-<p class="opacity-70 mt-2 mb-6">ผู้ดูแลเข้าสู่ Dashboard และบุคลากรเข้าสู่หน้าจัดการประวัติส่วนตัว (ต้องเชื่อมบัญชีกับรายชื่อโดยผู้ดูแลก่อน)</p>
+<p class="opacity-70 mt-2 mb-6">ผู้ดูแลเข้าสู่ Dashboard และบุคลากรเข้าสู่พื้นที่ทำงานส่วนตัว</p>
 <form id="login">
 <label class="block text-sm mb-2" for="email">อีเมล</label>
 <input id="email" class="w-full rounded-xl border p-3 mb-4 text-black" type="email" name="email" autocomplete="username" required>
@@ -86,10 +86,10 @@
           .limit(1);
         if (assignmentError) throw assignmentError;
         if (classroomAssignments && classroomAssignments.length > 0) {
-          location.replace('class-attendance.html');
+          location.replace('staff-portal.html');
           return;
         }
-        location.replace('personnel-profile.html');
+        location.replace('staff-portal.html');
         return;
       }
       await db.auth.signOut();
