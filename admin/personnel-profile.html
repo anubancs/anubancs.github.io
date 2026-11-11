@@ -6,6 +6,7 @@
 <section class="glass rounded-2xl p-6 mt-7"><p class="text-sm opacity-70">แก้ไขข้อมูลและส่งให้ผู้ดูแลตรวจสอบก่อน ข้อมูลที่แสดงบนเว็บไซต์จะยังเป็นข้อมูลเดิมจนกว่าจะได้รับอนุมัติ</p>
 <form id="profile-form" class="grid md:grid-cols-2 gap-4 mt-5">
 <label class="text-sm">ชื่อ-นามสกุล<input name="full_name" required maxlength="200" class="block w-full rounded-xl border p-3 text-black mt-1"></label>
+<label class="text-sm">อีเมลติดต่อ<input name="email" type="email" maxlength="200" class="block w-full rounded-xl border p-3 text-black mt-1" placeholder="อีเมลสำหรับติดต่อ"></label>
 <label class="text-sm">ตำแหน่ง<input name="position" required maxlength="200" class="block w-full rounded-xl border p-3 text-black mt-1"></label>
 <label class="text-sm">กลุ่มงาน / กลุ่มสาระ<input name="department" maxlength="200" class="block w-full rounded-xl border p-3 text-black mt-1"></label>
 <label class="text-sm">เบอร์โทรศัพท์ที่ยินยอมให้เผยแพร่<input name="phone_public" maxlength="50" class="block w-full rounded-xl border p-3 text-black mt-1"></label>
@@ -24,10 +25,10 @@
  const db=schoolSupabase,$=s=>document.querySelector(s),form=$('#profile-form');
  const {data:{user},error:authError}=await db.auth.getUser();if(authError||!user){location.replace('login.html');return}
  $('#account').textContent='เข้าสู่ระบบด้วย '+(user.email||'บัญชีบุคลากร');$('#login-username').value=user.email||user.phone||user.id;
- const {data:person,error}=await db.from('personnel').select('id,full_name,position,department,bio,photo_url,phone_public,personal_website_url,social_links,is_published').eq('auth_user_id',user.id).maybeSingle();
+ const {data:person,error}=await db.from('personnel').select('id,full_name,email,position,department,bio,photo_url,phone_public,personal_website_url,social_links,is_published').eq('auth_user_id',user.id).maybeSingle();
  if(error)throw error;
  if(!person){document.querySelector('main').innerHTML='<section class="glass rounded-2xl p-8"><h1 class="text-2xl font-bold">ยังไม่ได้เชื่อมบัญชีกับข้อมูลบุคลากร</h1><p class="mt-3">กรุณาติดต่อผู้ดูแลเว็บไซต์เพื่อเชื่อมบัญชีผู้ใช้เดิมกับรายชื่อบุคลากรของท่าน</p><a class="inline-block mt-5 underline text-wine" href="../index.html">กลับหน้าเว็บไซต์</a></section>';return}
- for(const key of ['full_name','position','department','bio','photo_url','phone_public','personal_website_url'])form.elements[key].value=person[key]||'';
+ for(const key of ['full_name','email','position','department','bio','photo_url','phone_public','personal_website_url'])form.elements[key].value=person[key]||'';
  if(person.photo_url){$('#profile-photo-preview').src=person.photo_url;$('#profile-photo-preview').classList.remove('hidden')}
  for(const key of ['facebook','instagram','line'])form.elements['social_'+key].value=person.social_links?.[key]||'';
  SchoolRichEditor.init(form.elements.bio);
@@ -43,7 +44,7 @@
   e.preventDefault();const button=$('#submit-request');button.disabled=true;
   const changes=Object.fromEntries(new FormData(form).entries());changes.bio=SchoolRichEditor.getHTML(form.elements.bio);
   changes.full_name=changes.full_name.trim();changes.position=changes.position.trim();
-  for(const k of ['department','bio','photo_url','phone_public','personal_website_url'])if(!changes[k])delete changes[k];
+  for(const k of ['email','department','bio','photo_url','phone_public','personal_website_url'])if(!changes[k])delete changes[k];
   const social={};for(const key of ['facebook','instagram','line']){const value=changes['social_'+key];delete changes['social_'+key];if(value)social[key]=value;}
   if(Object.keys(social).length)changes.social_links=social;
   try{
