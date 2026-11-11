@@ -84,7 +84,7 @@
       if (!source) { missed.push(className); continue; }
       const afterClass = source.replace(matcher, ' ');
       const values = [...afterClass.matchAll(/\d[\d,]*/g)].map(match => Number(match[0].replace(/,/g, '')));
-      if (values.length < 12 || values.some(value => !Number.isSafeInteger(value) || value < 0)) {
+      if (values.length !== 12 || values.some(value => !Number.isSafeInteger(value) || value < 0)) {
         missed.push(className);
         continue;
       }
