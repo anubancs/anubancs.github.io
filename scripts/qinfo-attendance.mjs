@@ -236,14 +236,24 @@ try {
   const attendanceDocs = parsed.flatMap(x => walk(x.body, o => o && typeof o === 'object' && o.attend && typeof o.attend === 'object' && o.classRoomEdu));
   const rosterArrays = parsed.flatMap(x => pickRows(x.body)).filter(a => a.some(x => x && x.CID && x.EducationClassDescription !== undefined));
   if (!countPayloads.length) {
-    const reportState = await page.evaluate(() => ({
-      title: document.title,
-      url: location.pathname + location.search,
-      yearChangeAvailable: typeof window.yearChange === 'function',
-      yearValue: document.querySelector('#year, select[name="year"]')?.value || null
-    }));
+    const reportState = [];
+    for (const context of page.frames()) {
+      const state = await context.evaluate(() => ({
+        title: document.title,
+        url: location.pathname + location.search,
+        yearChangeAvailable: typeof window.yearChange === 'function',
+        yearValue: document.querySelector('#year, select[name="year"]')?.value || null,
+        relevantText: (document.body?.innerText || '').split('\\n')
+          .map(x => x.trim()).filter(x => /รายงาน|สถิติ|มาเรียน|รายวัน|เมนู|หน้าหลัก|attendance|report/i.test(x)).slice(0, 35),
+        links: Array.from(document.querySelectorAll('a[href], [onclick], [role="menuitem"]'))
+          .map(x => ({ text: (x.innerText || x.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 80),
+            href: x.getAttribute('href') || '', onclick: x.getAttribute('onclick') || '' }))
+          .filter(x => x.text || x.href || x.onclick).slice(0, 60)
+      })).catch(() => ({ url: context.url(), inaccessible: true }));
+      reportState.push(state);
+    }
     throw new Error('Could not observe getCountStudent response after triggering ' + reportTrigger +
-      '; reportState=' + JSON.stringify({ ...reportState, reportNav }));
+      '; reportState=' + JSON.stringify({ frames: reportState, reportNav, clickedMenu }));
   }
   if (!attendanceDocs.length) throw new Error('Could not observe morning_attendance JSON; verify report page/date and authorized access');
   if (!rosterArrays.length) throw new Error('Could not observe student roster response needed to map attendance IDs to classes');
