@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>พื้นที่ทำงานบุคลากร | โรงเรียนอนุบาลชุมแสง</title><script src="https://cdn.tailwindcss.com"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><link rel="stylesheet" href="../assets/css/style.css?v=staff-portal-20261111"></head>
+<body class="min-h-screen bg-slate-50"><header class="brand-gradient text-white p-5"><div class="max-w-5xl mx-auto flex flex-wrap justify-between items-center gap-3"><div><b>School Portal · บุคลากร</b><p class="text-sm opacity-80">พื้นที่ทำงานส่วนบุคคล</p></div><button id="logout" type="button">ออกจากระบบ</button></div></header>
+<main class="max-w-5xl mx-auto p-5 md:p-10"><p class="text-wine font-semibold">STAFF WORKSPACE</p><h1 class="text-3xl font-bold mt-1">ยินดีต้อนรับ</h1><p id="welcome" class="text-slate-600 mt-2">กำลังตรวจสอบบัญชี...</p>
+<div class="grid md:grid-cols-2 gap-5 mt-8">
+<a href="personnel-profile.html" class="glass rounded-2xl p-7 block hover:shadow-lg transition"><div class="text-3xl mb-4">👤</div><h2 class="text-xl font-bold">ข้อมูลส่วนตัว</h2><p class="text-sm text-slate-600 mt-2">ตรวจสอบและแก้ไขประวัติบุคลากร รูปภาพ ช่องทางติดต่อ และข้อมูลแนะนำตัว ชื่อผู้ใช้สำหรับเข้าสู่ระบบไม่สามารถแก้ไขได้</p><span class="inline-block mt-5 text-wine font-semibold">เปิดหน้าข้อมูลส่วนตัว →</span></a>
+<a id="attendance-menu" href="class-attendance.html" class="glass rounded-2xl p-7 block hover:shadow-lg transition hidden"><div class="text-3xl mb-4">📋</div><h2 class="text-xl font-bold">บันทึกสถิติการมาเรียน</h2><p id="class-summary" class="text-sm text-slate-600 mt-2">สำหรับครูประจำชั้น บันทึกข้อมูลได้เฉพาะห้องที่ได้รับมอบหมาย</p><span class="inline-block mt-5 text-wine font-semibold">เปิดหน้าบันทึกสถิติ →</span></a>
+</div><section class="mt-8 text-sm text-slate-500"><a href="../personnel.html" class="underline">ดูทำเนียบบุคลากรบนเว็บไซต์</a></section></main>
+<script src="../assets/js/supabase.js"></script><script>
+(async()=>{const db=schoolSupabase;const {data:{user},error}=await db.auth.getUser();if(error||!user){location.replace('login.html');return}
+const {data:person,error:personError}=await db.from('personnel').select('full_name').eq('auth_user_id',user.id).maybeSingle();if(personError)throw personError;if(!person){await db.auth.signOut();location.replace('login.html');return}
+document.querySelector('#welcome').textContent=(person.full_name||user.email||'บุคลากร')+' · '+(user.email||'บัญชีบุคลากร');
+const {data:assignments,error:assignmentError}=await db.from('attendance_class_assignments').select('class_name').eq('academic_year',2569).eq('user_id',user.id);if(assignmentError)throw assignmentError;
+if(assignments?.length){document.querySelector('#attendance-menu').classList.remove('hidden');document.querySelector('#class-summary').textContent='ห้องที่รับผิดชอบ: '+assignments.map(a=>a.class_name).join(', ')+' · บันทึกและแก้ไขข้อมูลได้ในหน้าของครูประจำชั้น'}
+document.querySelector('#logout').addEventListener('click',async()=>{await db.auth.signOut();location.replace('login.html')});
+})().catch(error=>{document.querySelector('#welcome').textContent='โหลดข้อมูลไม่สำเร็จ: '+error.message;console.error(error)});
+</script></body></html>
