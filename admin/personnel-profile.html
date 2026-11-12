@@ -31,6 +31,7 @@
  for(const key of ['full_name','email','position','department','bio','photo_url','phone_public','personal_website_url'])form.elements[key].value=person[key]||'';
  if(person.photo_url){$('#profile-photo-preview').src=person.photo_url;$('#profile-photo-preview').classList.remove('hidden')}
  for(const key of ['facebook','instagram','line'])form.elements['social_'+key].value=person.social_links?.[key]||'';
+ const originalPhotoUrl=person.photo_url||''; // เก็บ URL รูปเดิมไว้ เพื่อไม่ส่งทับหากผู้ใช้ไม่ได้เลือกรูปใหม่
  const bioEditor=SchoolRichEditor.init(form.elements.bio);
  SchoolRichEditor.setHTML(form.elements.bio,person.bio||'');
  $('#bio-load-status').textContent=person.bio&&person.bio.replace(/<[^>]*>/g,'').replace(/&nbsp;|&#160;|　/g,'').trim()?'โหลดประวัติเดิมจากฐานข้อมูลเรียบร้อยแล้ว':'ยังไม่มีประวัติเดิมในฐานข้อมูล สามารถเพิ่มประวัติได้ที่ช่องนี้';
@@ -49,7 +50,9 @@
   const bioText=bioHtml.replace(/<[^>]*>/g,'').replace(/&nbsp;|&#160;|　/g,'').trim();
   if(bioText)changes.bio=bioHtml;else delete changes.bio; // ป้องกันการส่งค่าว่างไปเขียนทับประวัติเดิม
   changes.full_name=changes.full_name.trim();changes.position=changes.position.trim();
-  for(const k of ['email','department','bio','photo_url','phone_public','personal_website_url'])if(!changes[k])delete changes[k];
+  // ใช้ภาพเดิมเสมอเมื่อไม่ได้อัปโหลดหรือเลือกภาพใหม่จากคลัง แม้ช่อง URL จะถูกเติมภาพเดิมไว้ตั้งแต่โหลดหน้า
+  if(!changes.photo_url||changes.photo_url===originalPhotoUrl)delete changes.photo_url;
+  for(const k of ['email','department','bio','phone_public','personal_website_url'])if(!changes[k])delete changes[k];
   const social={};for(const key of ['facebook','instagram','line']){const value=changes['social_'+key];delete changes['social_'+key];if(value)social[key]=value;}
   if(Object.keys(social).length)changes.social_links=social;
   try{
