@@ -13,7 +13,7 @@
    <input class="rounded-xl p-3 text-black" name="department" placeholder="กลุ่มสาระ/กลุ่มงาน">
    <div><input class="w-full rounded-xl p-3 text-black" name="photo_url" type="url" placeholder="URL รูปภาพ"><div class="flex flex-wrap gap-3 mt-2"><label class="text-sm">อัปโหลดภาพใหม่<input id="staff-photo-file" class="block mt-1" type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-drive-upload="personnel" data-drive-target="#staff-form [name=photo_url]" data-drive-preview="#staff-photo-preview" data-drive-status="#staff-photo-status"></label><button type="button" class="text-wine underline text-sm" data-drive-library="personnel" data-drive-target="#staff-form [name=photo_url]" data-drive-preview="#staff-photo-preview" data-drive-status="#staff-photo-status">เลือกภาพเดิมจาก Google Drive</button></div><img id="staff-photo-preview" class="hidden mt-3 w-24 h-24 rounded-xl object-cover border" alt="ตัวอย่างรูปบุคลากร"><p id="staff-photo-status" class="text-xs mt-1 opacity-70" role="status"></p></div>
    <input class="rounded-xl p-3 text-black md:col-span-2" name="personal_website_url" type="url" placeholder="เว็บไซต์ส่วนตัว (https://...)">
-   <textarea data-rich-text class="rounded-xl p-3 text-black md:col-span-2" name="bio" rows="3" placeholder="ประวัติย่อ"></textarea>
+   <div class="md:col-span-2 min-w-0 w-full"><textarea data-rich-text class="rounded-xl p-3 text-black w-full" name="bio" rows="3" placeholder="ประวัติย่อ"></textarea></div>
    <button class="brand-gradient text-white rounded-xl p-3 md:col-span-2">เพิ่มบุคลากร (ยังไม่เผยแพร่)</button>
   </form>
  </section>
