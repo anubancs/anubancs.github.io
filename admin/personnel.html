@@ -4,11 +4,24 @@
 <body><header class="brand-gradient text-white p-5"><div class="max-w-7xl mx-auto flex flex-wrap justify-between gap-3 items-center"><b>School CMS · Personnel</b><nav class="flex flex-wrap gap-4"><a href="dashboard.html">Dashboard</a><a href="permissions.html">กำหนดสิทธิ์</a><a href="../personnel.html">ดูหน้าเว็บไซต์</a><button id="logout">ออกจากระบบ</button></nav></div></header>
 <main class="max-w-7xl mx-auto p-5 md:p-10">
  <p class="text-wine font-semibold">PERSONNEL MANAGEMENT</p><h1 class="text-3xl font-bold mt-1">จัดการข้อมูลบุคลากร</h1><p id="identity" class="text-sm opacity-60 mt-2"></p>
- <section class="glass rounded-2xl p-6 mt-7"><div class="flex flex-wrap justify-between gap-3 items-center"><div><h2 class="text-xl font-bold">รายชื่อบุคลากรทั้งหมด</h2><p class="text-sm opacity-70">เชื่อมบัญชีผู้ใช้เดิม กำหนดการเผยแพร่ และตรวจสอบสถานะข้อมูล</p></div><div class="flex flex-wrap gap-2"><a href="dashboard.html#staff-create" class="brand-gradient text-white rounded-xl px-4 py-2">เพิ่มรายชื่อบุคลากร</a><button id="refresh" class="border rounded-xl px-4 py-2">รีเฟรช</button></div></div><p id="staff-status" class="text-sm mt-3 opacity-70" role="status">กำลังโหลดข้อมูล...</p><div id="staff-list" class="space-y-3 mt-4"></div></section>
+ <section id="staff-create" class="glass rounded-2xl p-6 mt-7">
+  <h2 class="text-xl font-bold mb-2">เพิ่มบุคลากร</h2>
+  <p class="text-sm opacity-70 mb-4">เพิ่มข้อมูลบุคลากรเป็นฉบับร่างก่อน สามารถตรวจสอบและเผยแพร่ได้จากรายชื่อด้านล่าง</p>
+  <form id="staff-form" class="grid md:grid-cols-2 gap-3">
+   <input class="rounded-xl p-3 text-black" name="full_name" placeholder="ชื่อ-นามสกุล" required maxlength="200">
+   <input class="rounded-xl p-3 text-black" name="position" placeholder="ตำแหน่ง" required maxlength="200">
+   <input class="rounded-xl p-3 text-black" name="department" placeholder="กลุ่มสาระ/กลุ่มงาน">
+   <div><input class="w-full rounded-xl p-3 text-black" name="photo_url" type="url" placeholder="URL รูปภาพ"><div class="flex flex-wrap gap-3 mt-2"><label class="text-sm">อัปโหลดภาพใหม่<input id="staff-photo-file" class="block mt-1" type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-drive-upload="personnel" data-drive-target="#staff-form [name=photo_url]" data-drive-preview="#staff-photo-preview" data-drive-status="#staff-photo-status"></label><button type="button" class="text-wine underline text-sm" data-drive-library="personnel" data-drive-target="#staff-form [name=photo_url]" data-drive-preview="#staff-photo-preview" data-drive-status="#staff-photo-status">เลือกภาพเดิมจาก Google Drive</button></div><img id="staff-photo-preview" class="hidden mt-3 w-24 h-24 rounded-xl object-cover border" alt="ตัวอย่างรูปบุคลากร"><p id="staff-photo-status" class="text-xs mt-1 opacity-70" role="status"></p></div>
+   <input class="rounded-xl p-3 text-black md:col-span-2" name="personal_website_url" type="url" placeholder="เว็บไซต์ส่วนตัว (https://...)">
+   <textarea data-rich-text class="rounded-xl p-3 text-black md:col-span-2" name="bio" rows="3" placeholder="ประวัติย่อ"></textarea>
+   <button class="brand-gradient text-white rounded-xl p-3 md:col-span-2">เพิ่มบุคลากร (ยังไม่เผยแพร่)</button>
+  </form>
+ </section>
+ <section class="glass rounded-2xl p-6 mt-7"><div class="flex flex-wrap justify-between gap-3 items-center"><div><h2 class="text-xl font-bold">รายชื่อบุคลากรทั้งหมด</h2><p class="text-sm opacity-70">เชื่อมบัญชีผู้ใช้เดิม กำหนดการเผยแพร่ และตรวจสอบสถานะข้อมูล</p></div><div class="flex flex-wrap gap-2"><a href="#staff-create" class="brand-gradient text-white rounded-xl px-4 py-2">เพิ่มรายชื่อบุคลากร</a><button id="refresh" class="border rounded-xl px-4 py-2">รีเฟรช</button></div></div><p id="staff-status" class="text-sm mt-3 opacity-70" role="status">กำลังโหลดข้อมูล...</p><div id="staff-list" class="space-y-3 mt-4"></div></section>
  <section class="glass rounded-2xl p-6 mt-7"><h2 class="text-xl font-bold">คำขอแก้ไขข้อมูลจากบุคลากร</h2><p class="text-sm opacity-70">เมื่ออนุมัติ ข้อมูลใหม่จึงจะถูกนำไปแทนข้อมูลที่เผยแพร่บนเว็บไซต์</p><p id="request-status" class="text-sm mt-3 opacity-70" role="status">กำลังโหลดคำขอ...</p><div id="request-list" class="space-y-3 mt-4"></div></section>
  <p class="text-xs opacity-60 mt-6">การเชื่อมบัญชีเป็นการกำหนดสิทธิ์ให้แก้ไขข้อมูลเฉพาะระเบียนของตนเองเท่านั้น บุคลากรไม่สามารถเผยแพร่หรือแก้ไขข้อมูลของผู้อื่นได้</p>
 </main>
-<script src="../assets/js/supabase.js"></script><script>
+<script src="../assets/js/supabase.js"></script><script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script><script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script><script src="../assets/js/rich-editor.js"></script><script src="../assets/js/drive-upload.js?v=20261110-queryselector"></script><script src="../assets/js/drive-library.js?v=20261108-personnel"></script><script>
 (async()=>{
  const db=schoolSupabase,$=s=>document.querySelector(s),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const {data:{user},error:authError}=await db.auth.getUser();if(authError||!user){location.replace('login.html');return}
@@ -56,11 +69,32 @@
   $('#staff-list').innerHTML=people.map(p=>{
    const choices=accounts.filter(a=>!linkedElsewhere.has(a.user_id)||a.user_id===p.auth_user_id);
    const opts='<option value="">— ยังไม่เชื่อมบัญชี —</option>'+choices.map(a=>'<option value="'+a.user_id+'" '+(a.user_id===p.auth_user_id?'selected':'')+'>'+esc(a.full_name||'ไม่ระบุชื่อ')+' · '+esc(a.email||'ไม่มีอีเมล')+'</option>').join('');
-   return '<article class="border rounded-2xl p-4 grid lg:grid-cols-[1fr_minmax(260px,1fr)_auto] gap-4 items-center"><div><b>'+esc(p.full_name)+'</b><p class="text-sm opacity-70">'+esc(p.position)+' · '+esc(p.department||'ไม่ระบุกลุ่มงาน')+'</p><p class="text-xs mt-1 '+(p.is_published?'text-green-700':'text-amber-700')+'">'+(p.is_published?'เผยแพร่บนเว็บไซต์แล้ว':'ฉบับร่าง · บุคคลทั่วไปยังไม่เห็น')+'</p></div><label class="text-sm">บัญชีผู้ใช้ที่เชื่อม<input type="hidden"><select data-link="'+p.id+'" class="block w-full rounded-xl border p-3 text-black mt-1">'+opts+'</select></label><div class="flex flex-wrap gap-3"><button class="underline text-wine" data-publish="'+p.id+'" data-state="'+p.is_published+'">'+(p.is_published?'ถอนเผยแพร่':'เผยแพร่')+'</button>'+(canResetPassword&&p.auth_user_id?'<button class="underline text-wine" data-reset-password="'+p.auth_user_id+'" data-user-label="'+esc(p.full_name)+'">ตั้งรหัสผ่าน</button>':'')+'</div></article>';
-  }).join('')||'<p class="opacity-60">ยังไม่มีข้อมูลบุคลากร กรุณาเพิ่มข้อมูลจาก Dashboard ก่อน</p>';
+   return '<article class="border rounded-2xl p-4 grid lg:grid-cols-[1fr_minmax(260px,1fr)_auto] gap-4 items-center"><div><b>'+esc(p.full_name)+'</b><p class="text-sm opacity-70">'+esc(p.position)+' · '+esc(p.department||'ไม่ระบุกลุ่มงาน')+'</p><p class="text-xs mt-1 '+(p.is_published?'text-green-700':'text-amber-700')+'">'+(p.is_published?'เผยแพร่บนเว็บไซต์แล้ว':'ฉบับร่าง · บุคคลทั่วไปยังไม่เห็น')+'</p></div><label class="text-sm">บัญชีผู้ใช้ที่เชื่อม<input type="hidden"><select data-link="'+p.id+'" class="block w-full rounded-xl border p-3 text-black mt-1">'+opts+'</select></label><div class="flex flex-wrap gap-3"><button class="underline text-wine" data-edit-person="'+p.id+'">แก้ไขข้อมูล</button><button class="underline text-wine" data-publish="'+p.id+'" data-state="'+p.is_published+'">'+(p.is_published?'ถอนเผยแพร่':'เผยแพร่')+'</button><button class="underline text-red-700" data-delete-person="'+p.id+'">ลบ</button>'+(canResetPassword&&p.auth_user_id?'<button class="underline text-wine" data-reset-password="'+p.auth_user_id+'" data-user-label="'+esc(p.full_name)+'">ตั้งรหัสผ่าน</button>':'')+'</div></article>';
+  }).join('')||'<p class="opacity-60">ยังไม่มีข้อมูลบุคลากร กรุณาเพิ่มข้อมูลจากส่วนเพิ่มบุคลากรด้านบน</p>';
   $('#staff-status').textContent='แสดง '+people.length+' รายชื่อ · พบ '+accounts.length+' บัญชีผู้ใช้เดิม · '+people.filter(p=>p.auth_user_id).length+' รายชื่อเชื่อมบัญชีแล้ว';
   await loadRequests();
  }
+ $('#staff-form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const form=e.currentTarget,button=form.querySelector('button[type="submit"],button:not([type])');
+  const fullName=form.elements.full_name.value.trim(),position=form.elements.position.value.trim();
+  if(!fullName||!position){await Swal.fire('ข้อมูลไม่ครบ','กรุณากรอกชื่อ-นามสกุลและตำแหน่ง','warning');return}
+  const photo=form.elements.photo_url.value.trim(),website=form.elements.personal_website_url.value.trim();
+  if(photo&&!form.elements.photo_url.checkValidity()){form.elements.photo_url.reportValidity();return}
+  if(website&&!form.elements.personal_website_url.checkValidity()){form.elements.personal_website_url.reportValidity();return}
+  const bioEditor=SchoolRichEditor.init(form.elements.bio);
+  const payload={full_name:fullName,position,department:form.elements.department.value.trim()||null,photo_url:photo||null,personal_website_url:website||null,bio:bioEditor.getHTML(),social_links:{},is_published:false};
+  button.disabled=true;button.textContent='กำลังบันทึก...';
+  try{
+   const {error}=await db.from('personnel').insert(payload);if(error)throw error;
+   form.reset();bioEditor.setHTML('');
+   const preview=$('#staff-photo-preview');preview.removeAttribute('src');preview.classList.add('hidden');
+   $('#staff-photo-status').textContent='';
+   await load();
+   await Swal.fire('เพิ่มบุคลากรสำเร็จ','บันทึกเป็นฉบับร่างแล้ว สามารถเผยแพร่ได้จากรายการบุคลากร','success');
+  }catch(error){await Swal.fire('เพิ่มบุคลากรไม่สำเร็จ',error.message||'เกิดข้อผิดพลาด','error')}
+  finally{button.disabled=false;button.textContent='เพิ่มบุคลากร (ยังไม่เผยแพร่)'}
+ });
  async function loadRequests(){
   $('#request-status').textContent='กำลังโหลดคำขอ...';
   const {data,error}=await db.from('personnel_update_requests').select('id,personnel_id,requested_by,changes,status,created_at,personnel(full_name,position)').eq('status','pending').order('created_at',{ascending:false}).limit(100);
@@ -79,6 +113,32 @@
   await load();Swal.fire({toast:true,position:'top-end',icon:'success',title:'บันทึกการเชื่อมบัญชีแล้ว',showConfirmButton:false,timer:1700});
  });
  $('#staff-list').addEventListener('click',async e=>{
+  const edit=e.target.closest('[data-edit-person]'),del=e.target.closest('[data-delete-person]');
+  if(edit){
+   const id=edit.dataset.editPerson;const {data,error}=await db.from('personnel').select('*').eq('id',id).single();
+   if(error){await Swal.fire('โหลดข้อมูลไม่สำเร็จ',error.message,'error');return}
+   const fields=[['full_name','ชื่อ-นามสกุล',data.full_name||''],['position','ตำแหน่ง',data.position||''],['department','กลุ่มงาน',data.department||''],['photo_url','URL รูปภาพ',data.photo_url||''],['personal_website_url','เว็บไซต์ส่วนตัว',data.personal_website_url||''],['bio','ประวัติ',data.bio||'']];
+   const html=fields.map(([n,l,v])=>n==='photo_url'
+    ? '<label class="block text-left text-sm mt-2">'+l+'</label><input id="edit-photo-url" type="url" value="'+esc(v)+'" class="swal2-input" style="width:100%;margin:4px 0"><div class="flex flex-wrap items-center gap-3 mt-2"><label class="text-sm">อัปโหลดภาพใหม่<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="block mt-1" data-drive-upload="personnel" data-drive-target="#edit-photo-url" data-drive-preview="#edit-photo-preview" data-drive-status="#edit-photo-status"></label><button type="button" class="text-wine underline text-sm" data-drive-library="personnel" data-drive-target="#edit-photo-url" data-drive-preview="#edit-photo-preview" data-drive-status="#edit-photo-status">เลือกภาพเดิมจาก Google Drive</button></div><img id="edit-photo-preview" src="'+esc(v)+'" class="'+(v?'':'hidden')+' mt-3 w-24 h-24 rounded-xl object-cover border" alt="ตัวอย่างรูปบุคลากร"><p id="edit-photo-status" class="text-xs mt-1 opacity-70"></p>'
+    : '<label class="block text-left text-sm mt-2">'+l+'</label><textarea id="edit-'+n+'" '+(n==='bio'?'data-rich-text':'')+' class="swal2-textarea" style="width:100%;margin:4px 0">'+esc(v)+'</textarea>').join('');
+   const result=await Swal.fire({title:'แก้ไขข้อมูลบุคลากร',html,showCancelButton:true,confirmButtonText:'บันทึก',cancelButtonText:'ยกเลิก',didOpen:()=>SchoolRichEditor.init(document.querySelector('#edit-bio')),preConfirm:()=>{
+    const bio=SchoolRichEditor.getHTML(document.querySelector('#edit-bio'));
+    const value={};for(const [n] of fields)value[n]=n==='bio'?bio:document.querySelector(n==='photo_url'?'#edit-photo-url':'#edit-'+n).value;
+    return value;
+   }});
+   if(!result.isConfirmed)return;
+   const {error:updateError}=await db.from('personnel').update(result.value).eq('id',id);
+   if(updateError){await Swal.fire('บันทึกไม่สำเร็จ',updateError.message,'error');return}
+   await load();await Swal.fire('บันทึกสำเร็จ','','success');return;
+  }
+  if(del){
+   const person=people.find(x=>x.id===del.dataset.deletePerson);
+   const confirm=await Swal.fire({title:'ยืนยันลบบุคลากร?',text:person?.full_name||'',icon:'warning',showCancelButton:true,confirmButtonText:'ลบข้อมูล',cancelButtonText:'ยกเลิก'});
+   if(!confirm.isConfirmed)return;
+   const {error}=await db.from('personnel').delete().eq('id',del.dataset.deletePerson);
+   if(error){await Swal.fire('ลบไม่สำเร็จ',error.message,'error');return}
+   await load();return;
+  }
   const reset=e.target.closest('[data-reset-password]');
   if(reset){await resetUserPassword(reset.dataset.resetPassword,reset.dataset.userLabel);return}
   const b=e.target.closest('[data-publish]');if(!b)return;
@@ -99,5 +159,6 @@
  $('#refresh').addEventListener('click',()=>load().catch(e=>$('#staff-status').textContent='โหลดข้อมูลไม่สำเร็จ: '+e.message));
  $('#logout').addEventListener('click',async()=>{await db.auth.signOut();location.replace('login.html')});
  await load();
+ const bioField=document.querySelector('#staff-form [name=bio]');if(bioField)SchoolRichEditor.init(bioField);
 })().catch(e=>{const s=document.querySelector('#staff-status');if(s)s.textContent='ไม่สามารถเปิดหน้าจัดการได้: '+e.message;console.error(e)});
 </script></body></html>
