@@ -5,8 +5,8 @@
  * 1) Paste these functions at the END of the existing Code.gs.
  * 2) Add the two action branches shown below at the TOP of the existing doPost(e) try block:
  *
- *   if (p.action === 'quality_pdf_start') return qualityPdfResponse_(p.request_id, qualityPdfStart_(p));
- *   if (p.action === 'quality_pdf_chunk') return qualityPdfResponse_(p.request_id, qualityPdfChunk_(p));
+ *   if (p.action === 'quality_pdf_start') return qualityPdfHandle_(p, 'start');
+ *   if (p.action === 'quality_pdf_chunk') return qualityPdfHandle_(p, 'chunk');
  *
  * 3) In Project Settings > Script properties, ensure SUPABASE_PUBLISHABLE_KEY exists.
  * 4) In appsscript.json enable oauthScopes:
@@ -65,7 +65,7 @@ function qualityPdfStart_(p) {
     nextOffset:0, folderName:folderName, createdAt:Date.now()
   };
   CacheService.getScriptCache().put('quality_pdf_session_' + sessionId, JSON.stringify(session), QUALITY_3E_SESSION_TTL);
-  return {ok:true, request_id:requestId, chunk_bytes:QUALITY_3E_CHUNK_BYTES, file_size:size};
+  return {ok:true, session_id:sessionId, chunk_bytes:QUALITY_3E_CHUNK_BYTES, file_size:size};
 }
 
 function qualityPdfChunk_(p) {
@@ -102,7 +102,7 @@ function qualityPdfChunk_(p) {
   if (code === 308) {
     session.nextOffset = end + 1;
     cache.put('quality_pdf_session_' + sessionId, JSON.stringify(session), QUALITY_3E_SESSION_TTL);
-    return {ok:true, pending:true, next_offset:session.nextOffset, total_bytes:session.size};
+    return {ok:true, next_offset:session.nextOffset, total_bytes:session.size};
   }
   if (code === 200 || code === 201) {
     const body = JSON.parse(response.getContentText() || '{}');
@@ -147,4 +147,15 @@ function qualityPdfResponse_(requestId, result) {
   const id = qualityPdfSafeId_(requestId);
   if (id) CacheService.getScriptCache().put('upload_result_' + id, JSON.stringify(result), 600);
   return HtmlService.createHtmlOutput('ดำเนินการอัปโหลดแล้ว');
+}
+
+function qualityPdfHandle_(p, action) {
+  const requestId = qualityPdfSafeId_(p.request_id);
+  let result;
+  try {
+    result = action === 'start' ? qualityPdfStart_(p) : qualityPdfChunk_(p);
+  } catch (err) {
+    result = {ok:false, error:String(err && err.message || err)};
+  }
+  return qualityPdfResponse_(requestId, result);
 }
