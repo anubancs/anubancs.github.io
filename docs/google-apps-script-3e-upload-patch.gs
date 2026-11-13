@@ -29,7 +29,7 @@ function qualityPdfStart_(p) {
   const user = qualityPdfAuthorize_(p.access_token);
   const mime = String(p.mimeType || '').toLowerCase();
   const size = Number(p.file_size || 0);
-  const filename = String(p.filename || 'document.pdf').replace(/[\\\\/:*?"<>|]/g, '_').slice(0, 180);
+  const filename = String(p.filename || 'document.pdf').replace(/[<>:"|?*]/g, '_').replaceAll('/', '_').replaceAll(String.fromCharCode(92), '_').slice(0, 180);
   if (mime !== 'application/pdf' || !/\\.pdf$/i.test(filename)) throw new Error('อนุญาตเฉพาะไฟล์ PDF เท่านั้น');
   if (!Number.isSafeInteger(size) || size < 8 || size > QUALITY_3E_MAX_PDF_BYTES) throw new Error('ไฟล์ PDF ต้องมีขนาดไม่เกิน 100 MB');
   const section = String(p.section || '');
