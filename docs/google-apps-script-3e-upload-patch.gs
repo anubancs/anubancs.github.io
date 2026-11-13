@@ -24,8 +24,8 @@ const QUALITY_3E_CHUNK_BYTES = 2 * 1024 * 1024;
 const QUALITY_3E_SESSION_TTL = 21600;
 
 function qualityPdfStart_(p) {
-  const requestId = qualityPdfSafeId_(p.request_id);
-  if (!requestId) throw new Error('ไม่พบรหัสคำขออัปโหลด');
+  const sessionId = qualityPdfSafeId_(p.session_id);
+  if (!sessionId) throw new Error('ไม่พบรหัสเซสชันอัปโหลด');
   const user = qualityPdfAuthorize_(p.access_token);
   const mime = String(p.mimeType || '').toLowerCase();
   const size = Number(p.file_size || 0);
@@ -64,7 +64,7 @@ function qualityPdfStart_(p) {
     userId:user.id, userEmail:user.email || '', mimeType:'application/pdf',
     nextOffset:0, folderName:folderName, createdAt:Date.now()
   };
-  CacheService.getScriptCache().put('quality_pdf_session_' + requestId, JSON.stringify(session), QUALITY_3E_SESSION_TTL);
+  CacheService.getScriptCache().put('quality_pdf_session_' + sessionId, JSON.stringify(session), QUALITY_3E_SESSION_TTL);
   return {ok:true, request_id:requestId, chunk_bytes:QUALITY_3E_CHUNK_BYTES, file_size:size};
 }
 
