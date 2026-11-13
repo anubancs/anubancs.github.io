@@ -1,85 +1,66 @@
-# ติดตั้งส่วนขยายอัปโหลด PDF สำหรับ 3E SCHOOL QUALITY
+# ติดตั้ง Google Apps Script ฉบับรวมระบบหลัก + 3E PDF
 
-ไฟล์โค้ดส่วนขยาย: [google-apps-script-3e-upload-patch.gs](google-apps-script-3e-upload-patch.gs)
+ใช้ไฟล์ `Code.gs` ฉบับรวมที่แนบให้ในบทสนทนานี้เท่านั้น ไฟล์ดังกล่าวต่อยอดจาก Code.gs เดิมของโรงเรียน โดยเก็บ doGet, image upload, notify/Telegram, AI chat และ AI summary ไว้ พร้อมเพิ่ม 3E PDF resumable upload
 
-## 1. เปิดโครงการ Apps Script
+## 1. สำรองและแทนที่ Code.gs
 
-เปิดโครงการเดิมของโรงเรียน:
-https://script.google.com/home/projects/1ldzJf3IojPHgXe4GGxH7RFm_vqB6lGyT3x6nrx87sdXT17Z_Yq10zrcL/edit
+1. เปิดโครงการ Apps Script เดิม: https://script.google.com/home/projects/1ldzJf3IojPHgXe4GGxH7RFm_vqB6lGyT3x6nrx87sdXT17Z_Yq10zrcL/edit
+2. เปิด Code.gs เดิม แล้วคัดลอกเก็บสำรองไว้นอกโครงการก่อน
+3. เปิดไฟล์ Code.gs ฉบับรวมที่แนบในบทสนทนานี้
+4. แทนที่เนื้อหาใน Code.gs เดิมทั้งหมดด้วยเนื้อหาในไฟล์ฉบับรวม แล้วกด Save
 
-สำรอง Code.gs เดิมก่อนแก้ไข โดยคัดลอกเก็บไว้ในเครื่อง
+ห้ามนำเฉพาะส่วน patch ไปวางซ้ำ เพราะไฟล์ฉบับรวมมี action handlers และฟังก์ชันที่เชื่อมกันครบแล้ว
 
-## 2. เพิ่มฟังก์ชัน
+## 2. ตรวจสอบ Script Properties
 
-เปิดไฟล์ `google-apps-script-3e-upload-patch.gs` ใน GitHub แล้วคัดลอกโค้ดทั้งหมดไปวางต่อท้ายไฟล์ `Code.gs` เดิม ห้ามลบฟังก์ชันเดิม
+ต้องคงค่าเดิมทั้งหมด และตรวจว่ามี:
+- `SUPABASE_PUBLISHABLE_KEY`
+- `GEMINI_API_KEY` (หากใช้ AI)
+- `TELEGRAM_BOT_TOKEN` และ `TELEGRAM_CHAT_ID` (หากใช้การแจ้งเตือน)
 
-## 3. เพิ่ม action ใน doPost(e)
+ห้ามนำ Supabase service_role/secret key ไปใส่ในหน้าเว็บไซต์หรือไฟล์ JavaScript ฝั่งผู้ใช้
 
-ค้นหาโค้ดเดิม:
+## 3. ตรวจสอบ OAuth scopes
 
-```javascript
-function doPost(e) {
-  const p = e && e.parameter || {};
-  try {
-```
+ใน appsscript.json ให้คง scopes เดิมทั้งหมด และเพิ่มรายการต่อไปนี้หากยังไม่มี:
+- `https://www.googleapis.com/auth/drive`
+- `https://www.googleapis.com/auth/script.external_request`
 
-เพิ่มสองบรรทัดนี้ต่อจาก `try {` ทันที ก่อนเงื่อนไข action เดิม:
+อย่าแทนที่ scopes เดิมทั้งหมดด้วยสองรายการนี้ เพราะอาจกระทบการทำงานเดิม
 
-```javascript
-    if (p.action === 'quality_pdf_start') return qualityPdfHandle_(p, 'start');
-    if (p.action === 'quality_pdf_chunk') return qualityPdfHandle_(p, 'chunk');
-```
+## 4. ตรวจสอบโฟลเดอร์ Google Drive
 
-อย่าลบ action upload, notify, ai_summary หรือ ai_chat เดิม
+ภายใน `siteschool/3e` ต้องมีโฟลเดอร์ชื่อ:
+- `e-document`
+- `e-project-summary`
 
-## 4. ตรวจสอบ Script Properties
+โฟลเดอร์ 3e ID ที่กำหนดในโค้ด: `1zVmnCFQOYf5ihT8n5oXeUhIKWH_j5diU`
 
-ใน Project Settings > Script properties ต้องมี:
-- `SUPABASE_PUBLISHABLE_KEY` = Publishable key ของ Supabase project โรงเรียน
+## 5. Deploy
 
-ไม่ต้องใส่ service_role key และไม่ควรใส่รหัสลับลงในโค้ดหน้าเว็บไซต์
-
-## 5. กำหนด OAuth scopes
-
-ถ้าโครงการมีไฟล์ `appsscript.json` ให้เปิด Show "appsscript.json" manifest file และรวม scopes เหล่านี้ใน `oauthScopes` โดยคง scopes เดิมที่โครงการต้องใช้ไว้ด้วย:
-
-```json
-{
-  "oauthScopes": [
-    "https://www.googleapis.com/auth/drive",
-    "https://www.googleapis.com/auth/script.external_request"
-  ]
-}
-```
-
-หากมี scopes เดิมอยู่แล้ว ให้เพิ่มสองรายการนี้เข้าไป ไม่ใช่แทนที่รายการเดิมทั้งหมด
-
-## 6. บันทึกและ Deploy
-
-1. กด Save
-2. เลือก Deploy > Manage deployments
-3. กด Edit ที่ Web App deployment เดิม
-4. เลือก Version > New version
+1. Save
+2. Deploy > Manage deployments
+3. Edit Web App deployment เดิม
+4. Version > New version
 5. Execute as: Me
-6. Who has access: Anyone (คำขออัปโหลดแต่ละครั้งยังตรวจ Supabase login และสิทธิ์ owner/editor)
-7. กด Deploy และอนุญาตสิทธิ์ Google Drive เมื่อ Google ขอ
+6. Who has access: Anyone
+7. Deploy และอนุญาตสิทธิ์ Google Drive ตามที่ Google ขอ
 
-ใช้ URL /exec เดิม ไม่ต้องเปลี่ยนค่า URL ในเว็บไซต์
+ใช้ Web App URL /exec เดิม ไม่ต้องเปลี่ยน URL ที่เว็บไซต์
 
-## 7. ทดสอบ
+## 6. ทดสอบตามลำดับ
 
-1. เปิด https://www.anuban-cs.ac.th/admin/quality.html แล้วเข้าสู่ระบบด้วยบัญชี owner หรือ editor
-2. เลือกเอกสารประเภทใดก็ได้ ยกเว้นรายงานโครงการเพื่อทดสอบโฟลเดอร์ e-document
-3. เลือก PDF ขนาดเล็กก่อน ระบบควรเติม URL, ชื่อไฟล์ และขนาดไฟล์ให้อัตโนมัติ
-4. บันทึกรายการเป็นฉบับร่างก่อน แล้วตรวจไฟล์ใน Google Drive/3e/e-document
-5. ทดสอบรายงานโครงการเพื่อยืนยันว่าไฟล์ไปที่ Google Drive/3e/e-project-summary
-6. เมื่อผ่านแล้วจึงทดสอบไฟล์ขนาดใหญ่ขึ้น และสุดท้ายทดสอบใกล้ 100 MB
+1. เปิด https://www.anuban-cs.ac.th/admin/quality.html ด้วยบัญชี owner หรือ editor
+2. อัปโหลด PDF ขนาดเล็กไปยังประเภทเอกสารทั่วไป ตรวจไฟล์ใน `3e/e-document`
+3. อัปโหลด PDF ประเภทรายงานโครงการ ตรวจไฟล์ใน `3e/e-project-summary`
+4. เปิด URL ที่ระบบเติมให้ และตรวจว่าดู PDF ได้
+5. ทดสอบไฟล์ขนาดกลาง แล้วจึงทดสอบไฟล์ขนาดใหญ่ (ไม่เกิน 100 MiB)
+6. ทดสอบระบบเดิม: อัปโหลดภาพ, แบบฟอร์มติดต่อ/Telegram และ AI chat/summary ตามฟังก์ชันที่โรงเรียนเปิดใช้
 
-## ข้อจำกัดและความปลอดภัย
+## ข้อควรทราบ
 
-- จำกัด PDF สูงสุด 100 MiB (ประมาณ 100 MB) และส่งทีละ 2 MiB
-- โฟลเดอร์ปลายทางถูกกำหนดตายตัวในโค้ด ไม่รับ Folder ID จาก browser
-- ตรวจ Supabase access token และตรวจว่าผู้ใช้มีแถวใน admin_users ที่ role เป็น owner หรือ editor ทุกครั้ง
-- ไฟล์จะถูกตั้งเป็น Anyone with the link: Viewer เพื่อให้เว็บไซต์สาธารณะเปิดอ่าน PDF ได้
-- การลบรายการจาก Supabase ไม่ลบไฟล์ใน Drive
-- ยังไม่ถือว่าการอัปโหลดพร้อมใช้งานจริงจนกว่าจะ Deploy Apps Script และผ่านการทดสอบจากหน้า Admin
+- PDF แบ่งส่งส่วนละ 2 MiB และจำกัดขนาดรวม 100 MiB
+- ทุกส่วนตรวจ Supabase access token และสิทธิ์ใน `public.admin_users` (role `owner` หรือ `editor`)
+- ไฟล์ PDF ตั้งสิทธิ์ Anyone with the link: Viewer เพื่อให้ผู้เข้าชมเว็บไซต์อ่านได้
+- การลบรายการในฐานข้อมูลไม่ลบไฟล์ใน Drive โดยอัตโนมัติ
+- อย่าแจ้งว่าระบบพร้อมใช้งานจริงจนกว่าจะ Deploy และทดสอบ upload/download ผ่านบัญชีจริง
